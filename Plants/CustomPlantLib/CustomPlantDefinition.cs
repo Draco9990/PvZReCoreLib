@@ -19,6 +19,9 @@ public class CustomPlantDefinition : PlantDefinition
     public CustomPlantDefinition(IntPtr pointer) : base(pointer)
     {
         PlantDefinition peashooterDef = ReloadedUtils.GetPlantDefinition(SeedType.Peashooter);
+
+        m_seedType = (SeedType)PlantRegistry.RequestFreeSeedType();
+        m_packetIndex = (int)m_seedType;
         
         m_versusImage = null;
         m_chinaPlantImage = null;

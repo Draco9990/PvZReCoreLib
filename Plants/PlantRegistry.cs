@@ -35,13 +35,15 @@ public class PlantRegistry : MonoBehaviour
         OnPlantRegistryInit?.Invoke();
     }
     
-    public static void RegisterCustomPlantDefinition(PlantDefinition plantDefinition)
+    public static SeedType RegisterCustomPlantDefinition(PlantDefinition plantDefinition)
     {
         if (!_customPlantDefinitions.TryAdd(plantDefinition.SeedType, plantDefinition))
         {
             MelonLogger.Warning($"Overriding existing custom plant definition for SeedType {plantDefinition.SeedType}");
             _customPlantDefinitions[plantDefinition.SeedType] = plantDefinition;
         }
+        
+        return plantDefinition.SeedType;
     }
     
     public static bool IsCustomSeed(SeedType theSeedType)
@@ -71,6 +73,20 @@ public class PlantRegistry : MonoBehaviour
             }
         }
         return highestValue;
+    }
+
+    public static int RequestFreeSeedType()
+    {
+        for (int i = 1000; i < int.MaxValue; i++)
+        {
+            SeedType potentialSeedType = (SeedType)i;
+            if (!_customPlantDefinitions.ContainsKey(potentialSeedType))
+            {
+                return i;
+            }
+        }
+        
+        throw new Exception("No free SeedType values available.");
     }
 
     [HarmonyPatch(typeof(DataService), nameof(DataService.GetPlantDefinition))]
