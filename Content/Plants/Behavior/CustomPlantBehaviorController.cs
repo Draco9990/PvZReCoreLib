@@ -3,26 +3,19 @@ using Il2CppInterop.Runtime.Injection;
 using Il2CppInterop.Runtime.InteropTypes.Fields;
 using Il2CppReloaded.Gameplay;
 using MelonLoader;
+using PvZReCoreLib.Content.Common.Behavior;
 using UnityEngine;
 
 namespace PvZReCoreLib.Content.Plants.Behavior;
 
 [RegisterTypeInIl2Cpp]
-public class CustomPlantBehaviorController : MonoBehaviour
+public class CustomPlantBehaviorController : CustomBehaviorController<Plant>
 {
-    public Il2CppReferenceField<Plant> mPlant;
-    public Il2CppReferenceField<Board> mBoard;
-    
-    public Plant Plant => mPlant.Value;
-    public Board Board => mBoard.Value;
-    
     public bool bMintEffectActive = false;
     
     public CustomPlantBehaviorController(IntPtr pointer) : base(pointer)
     {
     }
-    
-    public CustomPlantBehaviorController() : base(ClassInjector.DerivedConstructorPointer<CustomPlantBehaviorController>()) => ClassInjector.DerivedConstructorBody(this);
 
     public static CustomPlantBehaviorController GetFor(Plant p)
     {
@@ -33,14 +26,8 @@ public class CustomPlantBehaviorController : MonoBehaviour
 
         return plantComp;
     }
-
-    public virtual void Awake() { }
-    public virtual void Update() { }
-
+    
     #region Plant Calls
-
-    public Action PostPlantInitialized;
-    public virtual void PostPlantInitialize() { PostPlantInitialized?.Invoke(); }
     
     public Action PrePlantUpdated;
     public virtual void PrePlantUpdate() { PrePlantUpdated?.Invoke(); }

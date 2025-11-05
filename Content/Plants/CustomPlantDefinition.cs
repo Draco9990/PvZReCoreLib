@@ -17,18 +17,22 @@ namespace PvZReCoreLib.Content.Plants;
 [RegisterTypeInIl2Cpp]
 public class CustomPlantDefinition : PlantDefinition
 {
+    #region Variables
+
     public int m_health = 300;
     public MintFamily m_mintFamily = MintFamily.None;
 
     public string m_description = "";
 
     public AssetReferenceSprite m_almanacBackground;
+
+    #endregion
     
     public CustomPlantDefinition(IntPtr pointer) : base(pointer)
     {
         PlantDefinition peashooterDef = ReloadedUtils.GetPlantDefinition(SeedType.Peashooter);
 
-        m_seedType = (SeedType)CustomContentRegistry.RequestFreeSeedType();
+        m_seedType = CustomContentRegistry.RequestFreeSeedType();
         m_animationType = ReanimationType.Peashooter;
         m_packetIndex = (int)m_seedType;
         

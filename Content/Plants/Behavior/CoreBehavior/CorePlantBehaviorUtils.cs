@@ -19,7 +19,7 @@ public class CorePlantBehaviorUtils
 
     #region Methods
 
-public static Il2CppSystem.Type GetBehaviorType(SeedType seedType)
+    public static Il2CppSystem.Type GetBehaviorType(SeedType seedType)
     {
         switch (seedType)
         {

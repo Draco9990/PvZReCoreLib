@@ -58,7 +58,7 @@ public class Plant_PlantInitialize_Patch
             try
             {
                 CustomPlantBehaviorController comp = __instance.mController.gameObject.AddComponent(behaviorType).Cast<CustomPlantBehaviorController>();
-                comp.mPlant.Value = __instance;
+                comp.mObject.Value = __instance;
                 comp.mBoard.Value = __instance.mBoard;
                     
                 comp.PostPlantInitialize();

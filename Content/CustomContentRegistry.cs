@@ -3,6 +3,7 @@ using Il2CppReloaded.Data;
 using Il2CppReloaded.Gameplay;
 using Il2CppReloaded.Services;
 using PvZReCoreLib.Content.Plants;
+using PvZReCoreLib.Content.Projectiles;
 using PvZReCoreLib.Util;
 using UnityEngine;
 
@@ -38,7 +39,9 @@ public class CustomContentRegistry
         
         OnCustomContentRegistryInit?.Invoke();
     }
-    
+
+    #region Seed Type
+
     public static bool IsValidCustomSeedType(SeedType theSeedType)
     {
         return _customSeedTypes.Contains(theSeedType);
@@ -55,29 +58,21 @@ public class CustomContentRegistry
         return (int)_customSeedTypes.Last();
     }
     
-    public static int RequestFreeSeedType()
+    public static SeedType RequestFreeSeedType()
     {
         for (int i = 1000; i < int.MaxValue; i++)
         {
             SeedType potentialSeedType = (SeedType)i;
             if (!_customPlantDefinitions.ContainsKey(potentialSeedType))
             {
-                return i;
+                return (SeedType)i;
             }
         }
         
         throw new Exception("No free SeedType values available.");
     }
-    
-    public static AlmanacEntryData GetCustomAlmanacEntry(SeedType seedType)
-    {
-        if (_customAlmanacEntries.ContainsKey(seedType))
-        {
-            return _customAlmanacEntries[seedType];
-        }
 
-        return null;
-    }
+    #endregion
 
     #region Custom Plants
 
@@ -125,6 +120,56 @@ public class CustomContentRegistry
     #region Custom Zombies
 
     
+
+    #endregion
+    
+    public static AlmanacEntryData GetCustomAlmanacEntry(SeedType seedType)
+    {
+        if (_customAlmanacEntries.ContainsKey(seedType))
+        {
+            return _customAlmanacEntries[seedType];
+        }
+
+        return null;
+    }
+
+    #region Custom Projectiles
+
+    public static ProjectileType RegisterCustomProjectile(CustomProjectileDefinition projectileDefinition)
+    {
+        _customProjectileDefinitions[projectileDefinition.m_projectileType] = projectileDefinition;
+        
+        return projectileDefinition.m_projectileType;
+    }
+    
+    public static bool IsValidCustomProjectileType(ProjectileType projectileType)
+    {
+        return _customProjectileDefinitions.ContainsKey(projectileType);
+    }
+    
+    public static ProjectileDefinition GetCustomProjectileDefinition(ProjectileType projectileType)
+    {
+        if (_customProjectileDefinitions.ContainsKey(projectileType))
+        {
+            return _customProjectileDefinitions[projectileType];
+        }
+
+        return null;
+    }
+    
+    public static ProjectileType RequestFreeProjectileType()
+    {
+        for (int i = 1000; i < int.MaxValue; i++)
+        {
+            ProjectileType potentialType = (ProjectileType)i;
+            if (!_customProjectileDefinitions.ContainsKey(potentialType))
+            {
+                return (ProjectileType)i;
+            }
+        }
+        
+        throw new Exception("No free ProjectileType values available.");
+    }
 
     #endregion
     
