@@ -3,10 +3,11 @@ using Il2CppReloaded;
 using Il2CppReloaded.Characters;
 using Il2CppReloaded.Gameplay;
 using Il2CppReloaded.Services;
-using PvZReCoreLib.Content.Plants.Skins.SkinDataTypes;
+using PvZReCoreLib.Content.Common.Skins.SkinDataTypes;
+using PvZReCoreLib.Content.Plants;
 using PvZReCoreLib.Util;
 
-namespace PvZReCoreLib.Content.Plants.Skins;
+namespace PvZReCoreLib.Content.Common.Skins;
 
 class SkinExtension : ClassExtension<CharacterSkinController>
 {

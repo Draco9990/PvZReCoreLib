@@ -61,7 +61,7 @@ public class Plant_PlantInitialize_Patch
                 comp.mObject.Value = __instance;
                 comp.mBoard.Value = __instance.mBoard;
                     
-                comp.PostPlantInitialize();
+                comp.PostObjectInitialize();
 
                 ext.CustomBehaviorController = comp;
             }

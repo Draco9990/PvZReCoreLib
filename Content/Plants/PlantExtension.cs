@@ -1,7 +1,7 @@
 ﻿using Il2CppReloaded.Gameplay;
+using PvZReCoreLib.Content.Common.Skins.SkinDataTypes;
 using PvZReCoreLib.Content.Plants.Behavior;
 using PvZReCoreLib.Content.Plants.Mint;
-using PvZReCoreLib.Content.Plants.Skins.SkinDataTypes;
 using PvZReCoreLib.Util;
 using UnityEngine;
 

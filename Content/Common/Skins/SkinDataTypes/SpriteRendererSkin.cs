@@ -1,9 +1,10 @@
 ﻿using Il2CppReloaded.Characters;
 using PvZReCoreLib.Content.Common.Audio;
+using PvZReCoreLib.Content.Plants;
 using PvZReCoreLib.Util;
 using UnityEngine;
 
-namespace PvZReCoreLib.Content.Plants.Skins.SkinDataTypes;
+namespace PvZReCoreLib.Content.Common.Skins.SkinDataTypes;
 
 public class SpriteRendererSkin : SkinType
 {

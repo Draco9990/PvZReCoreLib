@@ -1,4 +1,4 @@
-﻿namespace PvZReCoreLib.Content.Plants.Skins.SkinDataTypes;
+﻿namespace PvZReCoreLib.Content.Common.Skins.SkinDataTypes;
 
 public class BaseSpriterSkin : SkinType
 {

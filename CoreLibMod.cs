@@ -1,8 +1,8 @@
 ﻿using MelonLoader;
 using PvZReCoreLib;
 using PvZReCoreLib.Content;
+using PvZReCoreLib.Content.Common.Skins;
 using PvZReCoreLib.Content.Plants.Patches;
-using PvZReCoreLib.Content.Plants.Skins;
 using PvZReCoreLib.Util;
 using UnityEngine.SceneManagement;
 

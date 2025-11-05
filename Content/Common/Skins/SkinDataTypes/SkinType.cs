@@ -1,7 +1,7 @@
 ﻿using Il2CppReloaded.Characters;
 using Il2CppReloaded.Gameplay;
 
-namespace PvZReCoreLib.Content.Plants.Skins.SkinDataTypes;
+namespace PvZReCoreLib.Content.Common.Skins.SkinDataTypes;
 
 public class SkinType
 {

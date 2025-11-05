@@ -1,12 +1,8 @@
 ﻿using Il2CppReloaded.Gameplay;
-using PvZReCoreLib.Content.Plants.Behavior;
-using PvZReCoreLib.Content.Plants.Mint;
-using PvZReCoreLib.Content.Plants.Skins.SkinDataTypes;
-using PvZReCoreLib.Content.Projectiles;
 using PvZReCoreLib.Util;
 using UnityEngine;
 
-namespace PvZReCoreLib.Content.Plants;
+namespace PvZReCoreLib.Content.Projectiles;
 
 public class ProjectileExtension : ClassExtension<GameObject>
 {
