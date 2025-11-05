@@ -1,9 +1,9 @@
 ﻿using Il2CppInterop.Runtime;
 using Il2CppReloaded.Gameplay;
-using PvZReCoreLib.Plants.CustomPlantLib.Mint.Controllers;
+using PvZReCoreLib.Content.Plants.Mint.Controllers;
 using Type = Il2CppSystem.Type;
 
-namespace PvZReCoreLib.Plants.CustomPlantLib.Mint;
+namespace PvZReCoreLib.Content.Plants.Mint;
 
 public class MintUtils
 {

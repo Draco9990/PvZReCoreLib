@@ -1,6 +1,8 @@
 ﻿using MelonLoader;
 using PvZReCoreLib;
-using PvZReCoreLib.Plants;
+using PvZReCoreLib.Content;
+using PvZReCoreLib.Content.Plants.Patches;
+using PvZReCoreLib.Content.Plants.Skins;
 using PvZReCoreLib.Util;
 using UnityEngine.SceneManagement;
 
@@ -53,9 +55,12 @@ public class CoreLibMod : MelonMod
         
         ReLocalizer.Init();
         
-        PlantRegistry.Init();
+        SkinRegistry.Init();
+        CustomContentRegistry.Init();
         
-        //RegistryBridge.RegisterAssetBundle(ModId, "Mods/DracosMod/pvzcorelibassetbundle");
+        AlmanacModel_CustomPlantEntriesPatch.Patch();
+        
+        RegistryBridge.RegisterAssetBundle(ModId, "Mods/CoreLib/pvzcorelibassetbundle");
         
         OnCoreLibInit?.Invoke();
     }

@@ -1,7 +1,7 @@
 ﻿using Il2CppReloaded.Gameplay;
 using MelonLoader;
 
-namespace PvZReCoreLib.Plants.CustomPlantLib.Behavior.CoreBehavior;
+namespace PvZReCoreLib.Content.Plants.Behavior.CoreBehavior;
 
 [RegisterTypeInIl2Cpp]
 public class PeashooterBehaviorController : CustomPlantBehaviorController

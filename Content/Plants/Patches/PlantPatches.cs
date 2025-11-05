@@ -4,38 +4,31 @@ using Il2CppReloaded.Gameplay;
 using Il2CppReloaded.TreeStateActivities;
 using Il2CppSource.Controllers;
 using Il2CppSource.Utils;
-using PvZReCoreLib.Plants.CustomPlantLib.Behavior;
-using PvZReCoreLib.Plants.CustomPlantLib.Behavior.CoreBehavior;
-using PvZReCoreLib.Plants.CustomPlantLib.Mint;
+using PvZReCoreLib.Content.Plants.Behavior;
+using PvZReCoreLib.Content.Plants.Behavior.CoreBehavior;
+using PvZReCoreLib.Content.Plants.Mint;
+using PvZReCoreLib.Util;
 using Type = Il2CppSystem.Type;
 
-namespace PvZReCoreLib.Plants.CustomPlantLib.Patches;
-
-[HarmonyPatch(typeof(Plant), nameof(Plant.GetToolTip))]
-public class Plant_GetToolTip_Patch
-{
-    public static bool Prefix(Plant __instance, ref string __result)
-    {
-        if (PlantRegistry.IsCustomSeed(__instance.mSeedType))
-        {
-            PlantDefinition plantDef = ReloadedUtils.GetPlantDefinition(__instance.mSeedType);
-            __result = String.Concat(plantDef.PlantName, "\n", plantDef.m_plantToolTip);
-            return false;
-        }
-
-        return true;
-    }
-}
+namespace PvZReCoreLib.Content.Plants.Patches;
 
 [HarmonyPatch(typeof(Plant), nameof(Plant.PlantInitialize))]
 public class Plant_PlantInitialize_Patch
 {
     public static void Postfix(ref Plant __instance)
     {
+        if (ReplantedGet.TreeStateManager().Active.name == "AmanacPlants")
+        {
+            return;
+        }
+        
+        PlantExtension ext = PlantExtension.GetOrCreateExtension<PlantExtension>(__instance.mController.gameObject);
+        ext.source = __instance;
+        
         MintFamily mintFamily = MintFamily.None;
         Type behaviorType = null;
         
-        if (PlantRegistry.IsCustomSeed(__instance.mSeedType))
+        if (CustomContentRegistry.IsValidCustomPlantType(__instance.mSeedType))
         {
             try
             {
@@ -69,6 +62,8 @@ public class Plant_PlantInitialize_Patch
                 comp.mBoard.Value = __instance.mBoard;
                     
                 comp.PostPlantInitialize();
+
+                ext.CustomBehaviorController = comp;
             }
             catch (Exception e)
             {
@@ -87,6 +82,8 @@ public class Plant_PlantInitialize_Patch
                     comp.mPlant.Value = __instance;
                     comp.mBoard.Value = __instance.mBoard;
                     comp.mMintFamily = mintFamily;
+
+                    ext.MintFamilyBehaviorController = comp;
                 }
             }
             catch (Exception e)
@@ -106,7 +103,7 @@ public class PlantPreviewWorkaround
     {
         public static bool Prefix(GameplayActivity __instance, ref SeedType seedType, ReloadedObject cursorPreview)
         {
-            if (PlantRegistry.IsCustomSeed(seedType))
+            if (CustomContentRegistry.IsValidCustomPlantType(seedType))
             {
                 cachedOverride = seedType;
                 seedType = SeedType.Peashooter;

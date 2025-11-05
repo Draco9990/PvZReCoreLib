@@ -1,10 +1,6 @@
-﻿using Il2CppReloaded.Gameplay;
-using Il2CppSource.Utils;
-using MelonLoader;
-using Quaternion = UnityEngine.Quaternion;
-using Vector3 = UnityEngine.Vector3;
+﻿using MelonLoader;
 
-namespace PvZReCoreLib.Plants.CustomPlantLib.Mint.Controllers;
+namespace PvZReCoreLib.Content.Plants.Mint.Controllers;
 
 [RegisterTypeInIl2Cpp]
 public class EnlightenMintFamilyController : MintFamilyBehaviorController

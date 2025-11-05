@@ -1,7 +1,7 @@
 ﻿using Il2CppInterop.Runtime;
 using Il2CppReloaded.Gameplay;
 
-namespace PvZReCoreLib.Plants.CustomPlantLib.Behavior.CoreBehavior;
+namespace PvZReCoreLib.Content.Plants.Behavior.CoreBehavior;
 
 public class CorePlantBehaviorUtils
 {

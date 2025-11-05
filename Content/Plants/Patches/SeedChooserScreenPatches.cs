@@ -1,12 +1,10 @@
 ﻿using HarmonyLib;
-using Il2CppInterop.Runtime;
 using Il2CppReloaded.Gameplay;
 using PvZReCoreLib.Util;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
-namespace PvZReCoreLib.Plants.CustomPlantLib.Patches;
+namespace PvZReCoreLib.Content.Plants.Patches;
 
 // Add all custom seeds to our custom seed picker
 [HarmonyPatch(typeof(SeedChooserScreen), nameof(SeedChooserScreen.Update))]
@@ -22,13 +20,13 @@ public partial class SeedChooserScreen_CustomSeedsPatch
         patchMarker.IsPatched = true;
         
         // Add all custom seeds
-        for (int i = (int)SeedType.NumSeedsInChooser; i <= PlantRegistry.GetHighestCustomSeedTypeValue(); i++)
+        for (int i = (int)SeedType.NumSeedsInChooser; i <= CustomContentRegistry.GetHighestCustomPlantTypeValue(); i++)
         {
             // Init regular seeds
             {
                 ChosenSeed customSeed = new ChosenSeed();
                 customSeed.mSeedType = (SeedType)i;
-                customSeed.mSeedState = PlantRegistry.IsCustomSeed((SeedType)i) ? ChosenSeedState.SeedInChooser : ChosenSeedState.SeedPacketHidden;
+                customSeed.mSeedState = CustomContentRegistry.IsValidCustomPlantType((SeedType)i) ? ChosenSeedState.SeedInChooser : ChosenSeedState.SeedPacketHidden;
                 customSeed.mImitaterType = SeedType.None;
         
                 // Calculate position in grid (7 or 8 columns, multiple rows)
@@ -55,13 +53,13 @@ public partial class SeedChooserScreen_CustomSeedsPatch
                 __instance.mChosenSeeds.Add(customSeed);
             }
         }
-        for (int i = (int)SeedType.Twinsunflower; i <= PlantRegistry.GetHighestCustomSeedTypeValue(); i++)
+        for (int i = (int)SeedType.Twinsunflower; i <= CustomContentRegistry.GetHighestCustomPlantTypeValue(); i++)
         {
             // Init Imitater Seeds
             {
                 ChosenSeed customSeed = new ChosenSeed();
                 customSeed.mSeedType = (SeedType)i;
-                customSeed.mSeedState = PlantRegistry.IsCustomSeed((SeedType)i) ? ChosenSeedState.SeedInChooser : ChosenSeedState.SeedPacketHidden;
+                customSeed.mSeedState = CustomContentRegistry.IsValidCustomPlantType((SeedType)i) ? ChosenSeedState.SeedInChooser : ChosenSeedState.SeedPacketHidden;
                 customSeed.mImitaterType = SeedType.None;
         
                 // Calculate position in grid (7 or 8 columns, multiple rows)
@@ -102,107 +100,12 @@ public partial class SeedChooserScreen_CustomSeedsPatch
                 continue;
             }
             
-            InjectScrollbar(__instance, seedChooser, grid);
+            UnityUtil.InjectScrollbar(seedChooser, grid, __instance.Has7Rows() ? 7 : 6);
 
             break;
         }
         
         return true;
-    }
-
-    private static void InjectScrollbar(SeedChooserScreen __instance, Transform seedChooser, Transform gridTransform)
-    {
-        RectTransform grid = gridTransform.Cast<RectTransform>();
-        
-        // Store original grid size before modifications
-        Vector2 originalOffsetMin = grid.offsetMin;
-        Vector2 originalOffsetMax = grid.offsetMax;
-        
-        float height = grid.offsetMax.y - grid.offsetMin.y;
-        float newHeight = __instance.Has7Rows() ? height * 7 : height * 6;
-        originalOffsetMin.y = -newHeight;
-        
-        // Create Scroll View root
-        var scrollGO = new GameObject("GridScrollView", Il2CppType.Of<RectTransform>(), Il2CppType.Of<ScrollRect>());
-        scrollGO.transform.SetParent(seedChooser, false);
-        scrollGO.transform.SetSiblingIndex(grid.GetSiblingIndex());
-
-        var scrollRect = scrollGO.GetComponent<RectTransform>().Cast<RectTransform>();
-        scrollRect.anchorMin = grid.anchorMin;
-        scrollRect.anchorMax = grid.anchorMax;
-        scrollRect.pivot = grid.pivot;
-        scrollRect.offsetMin = originalOffsetMin;
-        scrollRect.offsetMax = originalOffsetMax;
-
-        // Create Viewport
-        var viewportGO = new GameObject("Viewport", Il2CppType.Of<RectTransform>(), Il2CppType.Of<Mask>(), Il2CppType.Of<Image>());
-        viewportGO.transform.SetParent(scrollGO.transform, false);
-
-        var viewportRect = viewportGO.GetComponent<RectTransform>();
-        viewportRect.anchorMin = new Vector2(0, 0);
-        viewportRect.anchorMax = new Vector2(1, 1);
-        viewportRect.offsetMin = Vector2.zero;
-        viewportRect.offsetMax = Vector2.zero;
-
-        var mask = viewportGO.GetComponent<Mask>();
-        mask.showMaskGraphic = false;
-
-        var viewportImage = viewportGO.GetComponent<Image>();
-        //viewportImage.color = new Color(0, 0, 0, 0); // Fully transparent
-
-        // Reset grid anchors/offsets and move under viewport
-        grid.SetParent(viewportGO.transform, false);
-        grid.anchorMin = new Vector2(0, 1); // Anchor to top-left
-        grid.anchorMax = new Vector2(1, 1);
-        grid.pivot = new Vector2(0.5f, 1);
-        grid.anchoredPosition = Vector2.zero;
-        
-        // Let the GridLayoutGroup control the size
-        // Don't set offsetMin/offsetMax - let it size itself
-
-        // Configure ScrollRect
-        var sr = scrollGO.GetComponent<ScrollRect>();
-        sr.viewport = viewportRect;
-        sr.content = grid;
-        sr.horizontal = false;
-        sr.vertical = true;
-
-        // Add scrollbar with Handle
-        var scrollbarGO = new GameObject("Scrollbar", Il2CppType.Of<RectTransform>(), Il2CppType.Of<Image>(), Il2CppType.Of<Scrollbar>());
-        scrollbarGO.transform.SetParent(scrollGO.transform, false);
-
-        var scrollbarRect = scrollbarGO.GetComponent<RectTransform>();
-        scrollbarRect.anchorMin = new Vector2(1, 0);
-        scrollbarRect.anchorMax = new Vector2(1, 1);
-        scrollbarRect.pivot = new Vector2(1, 0.5f);
-        scrollbarRect.sizeDelta = new Vector2(20, 0);
-        scrollbarRect.anchoredPosition = new Vector2(0, 0); // Position at right edge
-
-        var scrollbarImage = scrollbarGO.GetComponent<Image>();
-        scrollbarImage.color = new Color(0.2f, 0.2f, 0.2f, 0.5f); // Dark semi-transparent background
-
-        // Create Scrollbar Handle (required for scrollbar to work)
-        var handleGO = new GameObject("Handle", Il2CppType.Of<RectTransform>(), Il2CppType.Of<Image>());
-        handleGO.transform.SetParent(scrollbarGO.transform, false);
-
-        var handleRect = handleGO.GetComponent<RectTransform>();
-        handleRect.anchorMin = Vector2.zero;
-        handleRect.anchorMax = Vector2.one;
-        handleRect.offsetMin = Vector2.zero;
-        handleRect.offsetMax = Vector2.zero;
-
-        var handleImage = handleGO.GetComponent<Image>();
-        handleImage.color = new Color(0.5f, 0.5f, 0.5f, 0.8f); // Lighter handle
-
-        var scrollbar = scrollbarGO.GetComponent<Scrollbar>();
-        scrollbar.handleRect = handleRect;
-        scrollbar.direction = Scrollbar.Direction.BottomToTop;
-
-        sr.verticalScrollbar = scrollbar;
-        sr.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHideAndExpandViewport;
-        
-        // Force layout rebuild
-        LayoutRebuilder.ForceRebuildLayoutImmediate(grid);
     }
 }
 
@@ -211,7 +114,7 @@ public class SeedChooserScreen_GetChosenSeedFromType_Patch
 {
     public static bool Prefix(ref SeedChooserScreen __instance, SeedType theSeedType, ref ChosenSeed __result)
     {
-        if (PlantRegistry.IsCustomSeed(theSeedType))
+        if (CustomContentRegistry.IsValidCustomPlantType(theSeedType))
         {
             foreach (ChosenSeed chosenSeed in __instance.mChosenSeeds)
             {
@@ -235,7 +138,7 @@ public class SeedChooserScreen_ClickedSeedInChooser_Patch
         float deltaTime = Time.deltaTime;
     
         // Manually update any custom seeds
-        for (int i = (int)SeedType.NumSeedsInChooser; i <= PlantRegistry.GetHighestCustomSeedTypeValue(); i++)
+        for (int i = (int)SeedType.NumSeedsInChooser; i <= CustomContentRegistry.GetHighestCustomPlantTypeValue(); i++)
         {
             SeedType seedType = (SeedType)i;
             if (__instance.mApp.HasSeedType(seedType))

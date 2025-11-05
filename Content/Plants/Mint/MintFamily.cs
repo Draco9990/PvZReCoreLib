@@ -1,4 +1,4 @@
-﻿namespace PvZReCoreLib.Plants.CustomPlantLib.Mint;
+﻿namespace PvZReCoreLib.Content.Plants.Mint;
 
 public enum MintFamily
 {

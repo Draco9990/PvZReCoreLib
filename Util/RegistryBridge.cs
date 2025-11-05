@@ -101,15 +101,18 @@ public class RegistryBridge
         return AssetBundlesMap[assetBundleKey];
     }
     
-    public static void RegisterSpriteFromAssetBundle(string assetBundleKey, string assetPath, Action<string> resultCallback, Vector2? pivot = null)
+    public static void RegisterSpriteFromAssetBundle(string assetBundleKey, string assetPath, 
+        Action<string> resultCallback = null, Vector2? pivot = null, string keyOverride = null)
     {
         Action<Sprite> spriteCallback = (Sprite sprite) =>
         {
-            resultCallback.Invoke(RegisterObject(sprite));
+            var regRes = RegisterObject(sprite, keyOverride);
+            resultCallback?.Invoke(regRes);
         };
         LoadSpriteFromAssetBundle(assetBundleKey, assetPath, spriteCallback, pivot);
     }
-    public static void LoadSpriteFromAssetBundle(string assetBundleKey, string assetPath, Action<Sprite> resultCallback, Vector2? pivot = null)
+    public static void LoadSpriteFromAssetBundle(string assetBundleKey, string assetPath, Action<Sprite> resultCallback, 
+        Vector2? pivot = null)
     {
         Action<Texture2D> textureCallback = (Texture2D texture) =>
         {
@@ -125,11 +128,13 @@ public class RegistryBridge
         LoadAssetFromAssetBundle<Texture2D>(assetBundleKey, assetPath, textureCallback);
     }
     
-    public static void RegisterAssetFromAssetBundle<T>(string assetBundleKey, string assetPath, Action<string> resultCallback) where T : Object
+    public static void RegisterAssetFromAssetBundle<T>(string assetBundleKey, string assetPath,
+        Action<string> resultCallback = null, string keyOverride = null) where T : Object
     {
         Action<T> assetCallback = (T asset) =>
         {
-            resultCallback.Invoke(RegisterObject(asset));
+            var regRes = RegisterObject(asset, keyOverride);
+            resultCallback?.Invoke(regRes);
         };
         LoadAssetFromAssetBundle<T>(assetBundleKey, assetPath, assetCallback);
     }
@@ -137,7 +142,7 @@ public class RegistryBridge
     {
         Il2CppAssetBundle assetBundle = AssetBundlesMap[assetBundleKey];
         
-        var assetRequest = assetBundle.LoadAssetAsync(assetPath);
+        var assetRequest = assetBundle.LoadAssetWithSubAssetsAsync(assetPath);
         assetRequest.m_completeCallback += (Il2CppSystem.Action<AsyncOperation>)((AsyncOperation operation) =>
         {
             T asset = operation.Cast<AssetBundleRequest>().allAssets.First().Cast<T>();
@@ -146,9 +151,9 @@ public class RegistryBridge
         });
     }
     
-    public static string RegisterObject(Object obj)
+    public static string RegisterObject(Object obj, string keyOverride = null)
     {
-        string key = Guid.NewGuid().ToString();
+        string key = keyOverride ?? Guid.NewGuid().ToString();
         
         PreloadedAssetProvider.PreloadedAssets.Add(key, obj);
         var loc = PersistentStorage.Store(new ResourceLocationBase(key, key, typeof(PreloadedAssetProvider).FullName, obj.GetIl2CppType()));

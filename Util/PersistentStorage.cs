@@ -95,7 +95,7 @@ public class PersistentStorage : MonoBehaviour
         return Store(new Il2CppSystem.String(IL2CPP.il2cpp_gchandle_get_target(handle)));
     }
 
-    public static void Assign(Object toObject, string fieldName, string str)
+    public static void Assign(Il2CppSystem.Object toObject, string fieldName, string str)
     {
         IntPtr il2cppStr = IL2CPP.il2cpp_string_new(str);
 

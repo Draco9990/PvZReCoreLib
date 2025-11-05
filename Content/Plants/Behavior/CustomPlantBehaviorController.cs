@@ -5,7 +5,7 @@ using Il2CppReloaded.Gameplay;
 using MelonLoader;
 using UnityEngine;
 
-namespace PvZReCoreLib.Plants.CustomPlantLib.Behavior;
+namespace PvZReCoreLib.Content.Plants.Behavior;
 
 [RegisterTypeInIl2Cpp]
 public class CustomPlantBehaviorController : MonoBehaviour

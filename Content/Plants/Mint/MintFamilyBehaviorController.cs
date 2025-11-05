@@ -2,10 +2,11 @@
 using Il2CppInterop.Runtime.InteropTypes.Fields;
 using Il2CppReloaded.Gameplay;
 using MelonLoader;
-using PvZReCoreLib.Plants.CustomPlantLib.Behavior;
+using PvZReCoreLib.Content.Plants.Behavior;
+using PvZReCoreLib.Util;
 using UnityEngine;
 
-namespace PvZReCoreLib.Plants.CustomPlantLib.Mint;
+namespace PvZReCoreLib.Content.Plants.Mint;
 
 [RegisterTypeInIl2Cpp]
 public class MintFamilyBehaviorController : MonoBehaviour
@@ -36,11 +37,31 @@ public class MintFamilyBehaviorController : MonoBehaviour
 
     public virtual void StartBuffEffect()
     {
+        Action<GameObject> prefabCaller = (GameObject prefab) =>
+        {
+            var glowEffect = Plant.mApp.InstantiateOffscreen(prefab, Plant.mController.gameObject.transform);
+            glowEffect.SetName("MintGlowEffect");
+            glowEffect.transform.SetLocalPositionAndRotation(new Vector3(105, -135, 0), Quaternion.identity);
+            glowEffect.transform.localScale = new Vector3(1.5f, 1.5f, 1.5f);
+        };
+        RegistryBridge.LoadAssetFromAssetBundle(CoreLibMod.ModId, "assets/vfx/mintfx/prefab/mint_fx.prefab", prefabCaller);
+        
         Plant.mController.gameObject.GetComponent<CustomPlantBehaviorController>().OnMintEffectStart();
     }
 
     public virtual void FinishBuffEffect()
     {
+        var glowEffect = Plant.mController.gameObject.transform.Find("MintGlowEffect");
+        if (glowEffect != null)
+        {
+            Animator animator = glowEffect.GetComponent<Animator>();
+            if (animator != null)
+            {
+                animator.Play("outro");
+            }
+            Destroy(glowEffect, 1.1f);
+        }
+        
         Plant.mController.gameObject.GetComponent<CustomPlantBehaviorController>().OnMintEffectEnd();
     }
 }

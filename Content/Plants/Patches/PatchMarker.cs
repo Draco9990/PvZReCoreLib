@@ -1,6 +1,6 @@
 ﻿using PvZReCoreLib.Util;
 
-namespace PvZReCoreLib.Plants.CustomPlantLib.Patches;
+namespace PvZReCoreLib.Content.Plants.Patches;
 
 public class PatchMarker<TClassType> : ClassExtension<TClassType> where TClassType : Il2CppSystem.Object
 {
