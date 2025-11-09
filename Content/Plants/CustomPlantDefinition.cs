@@ -5,6 +5,7 @@ using Il2CppSource.Utils;
 using MelonLoader;
 using PvZReCoreLib.Content.Common.Skins;
 using PvZReCoreLib.Content.Common.Skins.SkinDataTypes;
+using PvZReCoreLib.Content.Common.Skins.SkinDataTypes.subtypes;
 using PvZReCoreLib.Content.Plants.Mint;
 using PvZReCoreLib.Util;
 using UnityEngine;
@@ -103,13 +104,13 @@ public class CustomPlantDefinition : PlantDefinition
         m_description = n;
     }
 
-    public void RegisterSkin(SkinType skinType)
+    public void RegisterSkin(IPlantSkin skinType)
     {
-        SkinRegistry.RegisterSkin(skinType);
+        SkinRegistry.RegisterPlantSkin(skinType);
 
         if (string.IsNullOrEmpty(m_defaultSkin))
         {
-            PersistentStorage.Assign(this, nameof(m_defaultSkin), skinType.skinId);
+            PersistentStorage.Assign(this, nameof(m_defaultSkin), skinType.GetSkinId());
         }
     }
     

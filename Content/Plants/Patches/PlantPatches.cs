@@ -1,6 +1,8 @@
 ﻿using HarmonyLib;
+using Il2CppReloaded;
 using Il2CppReloaded.Data;
 using Il2CppReloaded.Gameplay;
+using Il2CppReloaded.Services;
 using Il2CppReloaded.TreeStateActivities;
 using Il2CppSource.Controllers;
 using Il2CppSource.Utils;
@@ -8,6 +10,8 @@ using PvZReCoreLib.Content.Plants.Behavior;
 using PvZReCoreLib.Content.Plants.Behavior.CoreBehavior;
 using PvZReCoreLib.Content.Plants.Mint;
 using PvZReCoreLib.Util;
+using UnityEngine;
+using Object = UnityEngine.Object;
 using Type = Il2CppSystem.Type;
 
 namespace PvZReCoreLib.Content.Plants.Patches;
@@ -28,11 +32,11 @@ public class Plant_PlantInitialize_Patch
         MintFamily mintFamily = MintFamily.None;
         Type behaviorType = null;
         
+        PlantDefinition plantDef = AppCore.GetService<IDataService>().Cast<DataService>().GetPlantDefinition(__instance.mSeedType);
         if (CustomContentRegistry.IsValidCustomPlantType(__instance.mSeedType))
         {
             try
             {
-                PlantDefinition plantDef = ReloadedUtils.GetPlantDefinition(__instance.mSeedType);
                 if(plantDef.TryCast<CustomPlantDefinition>() is { } customDef)
                 {
                     __instance.mPlantMaxHealth = customDef.m_health;
@@ -57,11 +61,22 @@ public class Plant_PlantInitialize_Patch
         {
             try
             {
-                CustomPlantBehaviorController comp = __instance.mController.gameObject.AddComponent(behaviorType).Cast<CustomPlantBehaviorController>();
-                comp.mObject.Value = __instance;
+                CustomPlantBehaviorController comp;
+                if (__instance.mController.gameObject.TryGetComponent(out CustomPlantBehaviorController existingComp))
+                {
+                    comp = existingComp;
+                    comp.Reset();
+                }
+                else
+                {
+                    comp = __instance.mController.gameObject.AddComponent(behaviorType).Cast<CustomPlantBehaviorController>();
+                }
+                
+                comp.mPlant.Value = __instance;
                 comp.mBoard.Value = __instance.mBoard;
+                comp.mPlantDefinition.Value = plantDef;
                     
-                comp.PostObjectInitialize();
+                comp.PostInitialize();
 
                 ext.CustomBehaviorController = comp;
             }
@@ -78,10 +93,21 @@ public class Plant_PlantInitialize_Patch
                 Type mintFamilyControllerType = MintUtils.GetMintFamilyControllerType(mintFamily);
                 if (mintFamilyControllerType != null)
                 {
-                    MintFamilyBehaviorController comp = __instance.mController.gameObject.AddComponent(mintFamilyControllerType).Cast<MintFamilyBehaviorController>();
+                    MintFamilyBehaviorController comp;
+                    if (__instance.mController.gameObject.TryGetComponent(out MintFamilyBehaviorController existingComp))
+                    {
+                        comp = existingComp;
+                        comp.Reset();
+                    }
+                    else
+                    {
+                        comp = __instance.mController.gameObject.AddComponent(mintFamilyControllerType).Cast<MintFamilyBehaviorController>();
+                    }
+                    
                     comp.mPlant.Value = __instance;
                     comp.mBoard.Value = __instance.mBoard;
                     comp.mMintFamily = mintFamily;
+                    comp.PostInitialize();
 
                     ext.MintFamilyBehaviorController = comp;
                 }

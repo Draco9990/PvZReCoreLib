@@ -6,12 +6,14 @@ using UnityEngine;
 
 namespace PvZReCoreLib.Content.Common.Skins.SkinDataTypes;
 
-public class SpriteRendererSkin : SkinType
+public abstract class SpriteRendererSkin : SkinType
 {
     #region Variables
 
     public string AssetBundleId;
     public string SkinPrefabId;
+    
+    public Vector3 ScaleOverride = Vector3.one;
 
     #endregion
 
@@ -23,46 +25,34 @@ public class SpriteRendererSkin : SkinType
 
     #region Methods
 
-    public override void ApplySkin(CharacterSkinController skinController)
+    public override void ApplySkin(GameObject obj)
     {
-        var go = skinController.gameObject;
-        
         Action<GameObject> onSkinLoaded = (skinGameObject) =>
         {
             // TODO maybe GC errors?
-            var instance = UnityEngine.Object.Instantiate(skinGameObject, go.transform, false);
+            var instance = UnityEngine.Object.Instantiate(skinGameObject, obj.transform, false);
             instance.SetName("SpriteRendererSkin");
+            instance.transform.localScale = ScaleOverride;
 
             instance.AddComponent<AnimationSoundPlayer>();
         };
         RegistryBridge.LoadAssetFromAssetBundle<GameObject>(AssetBundleId, SkinPrefabId, onSkinLoaded);
-
-        skinController.m_skeleton.Skeleton.a = 0f;
-
-        PlantExtension ext = PlantExtension.GetOrCreateExtension<PlantExtension>(skinController.gameObject);
-        ext.CurrentSkin = this;
     }
 
-    public override void CleanUpSkin(CharacterSkinController skinController)
+    public override void CleanUpSkin(GameObject obj)
     {
-        var go = skinController.gameObject;
-        var existingChild = go.transform.Find("SpriteRendererSkin");
+        var existingChild = obj.transform.Find("SpriteRendererSkin");
         if (existingChild != null && existingChild.gameObject != null)
         {
             UnityEngine.Object.Destroy(existingChild.gameObject);
         }
-
-        skinController.m_skeleton.Skeleton.a = 1f;
-        
-        PlantExtension ext = PlantExtension.GetOrCreateExtension<PlantExtension>(skinController.gameObject);
-        ext.CurrentSkin = null;
     }
 
-    public override void PlayAnimation(CharacterSkinController skinController, CharacterAnimationController animationController,
+    public override void PlayAnimation(
+        GameObject obj,
         string animationName, CharacterTracks track, float fps, AnimLoopType loopType)
     {
-        var go = animationController.gameObject;
-        var existingChild = go.transform.Find("SpriteRendererSkin");
+        var existingChild = obj.transform.Find("SpriteRendererSkin/anim");
         if (existingChild == null || existingChild.gameObject == null)
         {
             return;
@@ -74,6 +64,10 @@ public class SpriteRendererSkin : SkinType
             return;
         }
         
+        if(spriteAnimator.GetCurrentStateName(0) == animationName)
+        {
+            return;
+        }
         spriteAnimator.Play(animationName);
     }
 

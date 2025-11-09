@@ -27,7 +27,7 @@ public class CustomContentRegistry
     private static Dictionary<ProjectileType, ProjectileDefinition> _customProjectileDefinitions = new ();
     
     // Common
-    public static Action OnCustomContentRegistryInit;
+    public static Action PostInit;
     
     #endregion
 
@@ -37,7 +37,7 @@ public class CustomContentRegistry
     {
         EmptyPlantDefinition = PersistentStorage.Store(ScriptableObject.CreateInstance<PlantDefinition>());
         
-        OnCustomContentRegistryInit?.Invoke();
+        PostInit?.Invoke();
     }
 
     #region Seed Type
@@ -76,8 +76,13 @@ public class CustomContentRegistry
 
     #region Custom Plants
 
-    public static SeedType RegisterCustomPlant(CustomPlantDefinition plantData)
+    public static SeedType RegisterCustomPlant(CustomPlantDefinition plantData, bool preventGc = true)
     {
+        if (preventGc)
+        {
+            PersistentStorage.Store(plantData);
+        }
+        
         _customSeedTypes.Add(plantData.SeedType);
         
         _customPlantDefinitions[plantData.SeedType] = plantData;
@@ -135,8 +140,13 @@ public class CustomContentRegistry
 
     #region Custom Projectiles
 
-    public static ProjectileType RegisterCustomProjectile(CustomProjectileDefinition projectileDefinition)
+    public static ProjectileType RegisterCustomProjectile(CustomProjectileDefinition projectileDefinition, bool preventGc = true)
     {
+        if (preventGc)
+        {
+            PersistentStorage.Store(projectileDefinition);
+        }
+        
         _customProjectileDefinitions[projectileDefinition.m_projectileType] = projectileDefinition;
         
         return projectileDefinition.m_projectileType;
@@ -190,6 +200,21 @@ public class GetPlantDefinitionPatch
         if (seedType >= SeedType.NumSeedsInChooser)
         {
             __result = CustomContentRegistry.EmptyPlantDefinition;
+            return false;
+        }
+            
+        return true;
+    }
+}
+
+[HarmonyPatch(typeof(DataService), nameof(DataService.GetProjectileDefinition))]
+public class GetProjectileDefinitionPatch
+{
+    public static bool Prefix(ProjectileType projectileType, ref ProjectileDefinition __result)
+    {
+        if (CustomContentRegistry.IsValidCustomProjectileType(projectileType))
+        {
+            __result = CustomContentRegistry.GetCustomProjectileDefinition(projectileType);
             return false;
         }
             

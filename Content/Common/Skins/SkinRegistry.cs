@@ -4,21 +4,18 @@ using Il2CppReloaded.Characters;
 using Il2CppReloaded.Gameplay;
 using Il2CppReloaded.Services;
 using PvZReCoreLib.Content.Common.Skins.SkinDataTypes;
+using PvZReCoreLib.Content.Common.Skins.SkinDataTypes.subtypes;
 using PvZReCoreLib.Content.Plants;
 using PvZReCoreLib.Util;
 
 namespace PvZReCoreLib.Content.Common.Skins;
 
-class SkinExtension : ClassExtension<CharacterSkinController>
-{
-    public SkinType CurrentSkin = null;
-}
-
 public class SkinRegistry
 {
     #region Variables
     
-    public static Dictionary<string, SkinType> RegisteredSkins = new Dictionary<string, SkinType>();
+    public static Dictionary<string, IPlantSkin> PlantSkins = new Dictionary<string, IPlantSkin>();
+    public static Dictionary<string, IProjectileSkin> ProjectileSkins = new Dictionary<string, IProjectileSkin>();
 
     #endregion
 
@@ -31,12 +28,11 @@ public class SkinRegistry
         {
             SeedType seedType = (SeedType)i;
             var definition = AppCore.GetService<IDataService>().Cast<DataService>().GetPlantDefinition(seedType);
-            var defaultSkin = new BaseSpriterSkin()
+            var defaultSkin = new BaseSpriterPlantSkin()
             {
-                ForSeedType = seedType,
                 skinId = $"{definition.m_defaultSkin}"
             };
-            RegisterSkin(defaultSkin);
+            RegisterPlantSkin(defaultSkin);
         }
     }
 
@@ -44,14 +40,24 @@ public class SkinRegistry
 
     #region Methods
     
-    public static string RegisterSkin(SkinType skinType)
+    public static string RegisterPlantSkin(IPlantSkin skin)
     {
-        if(!RegisteredSkins.ContainsKey(skinType.skinId))
+        if(!PlantSkins.ContainsKey(skin.GetSkinId()))
         {
-            RegisteredSkins.Add(skinType.skinId, skinType);
+            PlantSkins.Add(skin.GetSkinId(), skin);
         }
 
-        return skinType.skinId;
+        return skin.GetSkinId();
+    }
+    
+    public static string RegisterProjectileSkin(IProjectileSkin skin)
+    {
+        if(!ProjectileSkins.ContainsKey(skin.GetSkinId()))
+        {
+            ProjectileSkins.Add(skin.GetSkinId(), skin);
+        }
+
+        return skin.GetSkinId();
     }
 
     #endregion
@@ -62,18 +68,17 @@ public class CustomSkinRegistry_SetCurrentSkin_Patch
 {
     public static void Postfix(CharacterSkinController __instance)
     {
-        var extension = SkinExtension.GetOrCreateExtension<SkinExtension>(__instance);
+        var extension = PlantExtension.GetOrCreateExtension<PlantExtension>(__instance.gameObject);
         if(extension.CurrentSkin != null)
         {
-            extension.CurrentSkin.CleanUpSkin(__instance);
-            extension.CurrentSkin = null;
+            extension.CurrentSkin.CleanUpSkin(__instance.gameObject);
         }
         
         var requestedSkin = __instance.m_currentSkin;
-        if(SkinRegistry.RegisteredSkins.TryGetValue(requestedSkin, out var skinType))
+        if(SkinRegistry.PlantSkins.TryGetValue(requestedSkin, out var skinType))
         {
-            skinType.ApplySkin(__instance);
-            extension.CurrentSkin = skinType;
+            skinType.ApplySkin(__instance.gameObject);
+            extension.CurrentSkin = (SkinType)skinType;
         }
     }
 }
@@ -88,16 +93,11 @@ public class CustomSkinRegistry_PlayAnimation_Patch
         AnimLoopType loopType)
     {
         var plantExtension = PlantExtension.GetOrCreateExtension<PlantExtension>(__instance.gameObject.transform.parent.gameObject);
-        if (plantExtension == null || plantExtension.source == null)
+        if (plantExtension == null || plantExtension.CurrentSkin == null)
         {
             return;
         }
         
-        var skinExtension = SkinExtension.GetOrCreateExtension<SkinExtension>(plantExtension.source.mController.m_skinController);
-        if (skinExtension == null || skinExtension.CurrentSkin == null)
-        {
-            return;
-        }
-        skinExtension.CurrentSkin.PlayAnimation(plantExtension.source.mController.m_skinController, __instance, animationName, track, fps, loopType);
+        plantExtension.CurrentSkin.PlayAnimation(__instance.gameObject, animationName, track, fps, loopType);
     }
 }

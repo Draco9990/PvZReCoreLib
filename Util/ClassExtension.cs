@@ -59,6 +59,16 @@ public class ClassExtension<TClassType> where TClassType : Object
         extensions.Add(newExtension);
         return newExtension;
     }
+    
+    public static void DeleteExtensionData(TClassType classInstance)
+    {
+        PurgeNullTableKeys();
+        
+        if (classExtensions.ContainsKey(classInstance))
+        {
+            classExtensions.Remove(classInstance);
+        }
+    }
 
     #endregion
 }

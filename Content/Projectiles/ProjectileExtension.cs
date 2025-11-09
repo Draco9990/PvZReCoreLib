@@ -1,4 +1,5 @@
 ﻿using Il2CppReloaded.Gameplay;
+using PvZReCoreLib.Content.Common.Skins.SkinDataTypes;
 using PvZReCoreLib.Util;
 using UnityEngine;
 
@@ -9,4 +10,6 @@ public class ProjectileExtension : ClassExtension<GameObject>
     public Projectile source;
         
     public CustomProjectileBehaviorController CustomBehaviorController;
+    
+    public SkinType CurrentSkin;
 }

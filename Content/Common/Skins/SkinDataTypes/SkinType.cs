@@ -1,13 +1,13 @@
 ﻿using Il2CppReloaded.Characters;
 using Il2CppReloaded.Gameplay;
+using UnityEngine;
 
 namespace PvZReCoreLib.Content.Common.Skins.SkinDataTypes;
 
-public class SkinType
+public abstract class SkinType
 {
     #region Variables
-
-    public SeedType ForSeedType = SeedType.None;
+    
     public string skinId = string.Empty;
 
     #endregion
@@ -20,15 +20,21 @@ public class SkinType
 
     #region Methods
     
-    public virtual void ApplySkin(CharacterSkinController skinController) {}
-    public virtual void CleanUpSkin(CharacterSkinController skinController) {}
+    public virtual void ApplySkin(GameObject obj) {}
+    public virtual void CleanUpSkin(GameObject obj) {}
     
-    public virtual void PlayAnimation(CharacterSkinController skinController, CharacterAnimationController animationController,
+    public virtual void PlayAnimation(
+        GameObject obj,
         string animationName,
         CharacterTracks track,
         float fps,
         AnimLoopType loopType
     ) {}
+    
+    public string GetSkinId()
+    {
+        return skinId;
+    }
 
     #endregion
 }

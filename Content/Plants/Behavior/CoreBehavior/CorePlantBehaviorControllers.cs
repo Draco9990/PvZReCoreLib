@@ -27,8 +27,6 @@ public class PeashooterBehaviorController : CustomPlantBehaviorController
 public class SunflowerBehaviorController : CustomPlantBehaviorController
 {
     #region Variables
-
-    private float launchTimerCache; 
     
     #endregion
 
@@ -42,20 +40,13 @@ public class SunflowerBehaviorController : CustomPlantBehaviorController
 
     #region Methods
 
-    public override void PreProductionPlantUpdate()
+    public override void OnLaunchCounterTriggered()
     {
-        base.PreProductionPlantUpdate();
+        base.OnLaunchCounterTriggered();
 
-        launchTimerCache = Object.mLaunchCounter;
-    }
-
-    public override void PostProductionPlantUpdate()
-    {
-        base.PostProductionPlantUpdate();
-        
-        if (Object.mLaunchCounter > launchTimerCache && bMintEffectActive)
+        if (bMintEffectActive)
         {
-            Board.AddCoin(Object.mX, Object.mY, CoinType.Sun, CoinMotion.FromPlant);
+            Board.AddCoin(Plant.mX, Plant.mY, CoinType.Sun, CoinMotion.FromPlant);
         }
     }
 
@@ -207,7 +198,6 @@ public class SunshroomBehaviorController : CustomPlantBehaviorController
 {
     #region Variables
 
-    private float launchTimerCache;
     private int launchRateCache;
 
     #endregion
@@ -226,12 +216,12 @@ public class SunshroomBehaviorController : CustomPlantBehaviorController
     {
         base.OnMintEffectStart();
 
-        launchRateCache = Object.mLaunchRate;
+        launchRateCache = Plant.mLaunchRate;
         
-        Object.mLaunchRate = 500;
-        if (Object.mState == PlantState.SunshroomSmall)
+        Plant.mLaunchRate = 500;
+        if (Plant.mState == PlantState.SunshroomSmall)
         {
-            Object.mStateCountdown = 0;
+            Plant.mStateCountdown = 0;
         }
     }
 
@@ -239,23 +229,16 @@ public class SunshroomBehaviorController : CustomPlantBehaviorController
     {
         base.OnMintEffectEnd();
 
-        Object.mLaunchRate = launchRateCache;
+        Plant.mLaunchRate = launchRateCache;
     }
     
-    public override void PreProductionPlantUpdate()
+    public override void OnLaunchCounterTriggered()
     {
-        base.PreProductionPlantUpdate();
+        base.OnLaunchCounterTriggered();
 
-        launchTimerCache = Object.mLaunchCounter;
-    }
-
-    public override void PostProductionPlantUpdate()
-    {
-        base.PostProductionPlantUpdate();
-        
-        if (Object.mLaunchCounter > launchTimerCache && bMintEffectActive)
+        if (bMintEffectActive)
         {
-            Board.AddCoin(Object.mX, Object.mY, CoinType.Sun, CoinMotion.FromPlant);
+            Board.AddCoin(Plant.mX, Plant.mY, CoinType.Sun, CoinMotion.FromPlant);
         }
     }
 
@@ -855,8 +838,6 @@ public class MarigoldBehaviorController : CustomPlantBehaviorController
 {
     #region Variables
     
-    private float launchTimerCache; 
-
     #endregion
 
     #region Constructors
@@ -869,20 +850,13 @@ public class MarigoldBehaviorController : CustomPlantBehaviorController
 
     #region Methods
 
-    public override void PreProductionPlantUpdate()
+    public override void OnLaunchCounterTriggered()
     {
-        base.PreProductionPlantUpdate();
+        base.OnLaunchCounterTriggered();
 
-        launchTimerCache = Object.mLaunchCounter;
-    }
-
-    public override void PostProductionPlantUpdate()
-    {
-        base.PostProductionPlantUpdate();
-        
-        if (Object.mLaunchCounter > launchTimerCache && bMintEffectActive)
+        if (bMintEffectActive)
         {
-            Board.AddCoin(Object.mX, Object.mY, CoinType.Diamond, CoinMotion.FromPlant);
+            Board.AddCoin(Plant.mX, Plant.mY, CoinType.Diamond, CoinMotion.FromPlant);
         }
     }
 
@@ -934,8 +908,6 @@ public class TwinsunflowerBehaviorController : CustomPlantBehaviorController
 {
     #region Variables
     
-    private float launchTimerCache; 
-
     #endregion
 
     #region Constructors
@@ -948,20 +920,13 @@ public class TwinsunflowerBehaviorController : CustomPlantBehaviorController
 
     #region Methods
     
-    public override void PreProductionPlantUpdate()
+    public override void OnLaunchCounterTriggered()
     {
-        base.PreProductionPlantUpdate();
+        base.OnLaunchCounterTriggered();
 
-        launchTimerCache = Object.mLaunchCounter;
-    }
-
-    public override void PostProductionPlantUpdate()
-    {
-        base.PostProductionPlantUpdate();
-        
-        if (Object.mLaunchCounter > launchTimerCache && bMintEffectActive)
+        if (bMintEffectActive)
         {
-            Board.AddCoin(Object.mX, Object.mY, CoinType.LargeSun, CoinMotion.FromPlant);
+            Board.AddCoin(Plant.mX, Plant.mY, CoinType.LargeSun, CoinMotion.FromPlant);
         }
     }
 

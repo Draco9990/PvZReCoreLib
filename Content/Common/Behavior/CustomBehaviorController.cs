@@ -8,12 +8,10 @@ using UnityEngine;
 namespace PvZReCoreLib.Content.Common.Behavior;
 
 [RegisterTypeInIl2Cpp]
-public class CustomBehaviorController<TObjectType> : MonoBehaviour where TObjectType : Il2CppObjectBase
+public class CustomBehaviorController : MonoBehaviour
 {
-    public Il2CppReferenceField<TObjectType> mObject;
     public Il2CppReferenceField<Board> mBoard;
     
-    public TObjectType Object => mObject.Value;
     public Board Board => mBoard.Value;
     
     #region Variables
@@ -28,7 +26,7 @@ public class CustomBehaviorController<TObjectType> : MonoBehaviour where TObject
     {
     }
     
-    public CustomBehaviorController() : base(ClassInjector.DerivedConstructorPointer<CustomBehaviorController<TObjectType>>()) => ClassInjector.DerivedConstructorBody(this);
+    public CustomBehaviorController() : base(ClassInjector.DerivedConstructorPointer<CustomBehaviorController>()) => ClassInjector.DerivedConstructorBody(this);
 
     #endregion
 
@@ -37,8 +35,11 @@ public class CustomBehaviorController<TObjectType> : MonoBehaviour where TObject
     public virtual void Awake() { }
     public virtual void Update() { }
     
-    public Action PostObjectInitialized;
-    public virtual void PostObjectInitialize() { PostObjectInitialized?.Invoke(); }
+    public Action PostInitializeEvent;
+    public virtual void PostInitialize() { PostInitializeEvent?.Invoke(); }
+
+    public Action OnResetEvent;
+    public virtual void Reset() { OnResetEvent?.Invoke(); }
 
     #endregion
 }
