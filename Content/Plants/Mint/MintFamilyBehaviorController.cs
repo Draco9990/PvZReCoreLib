@@ -41,10 +41,10 @@ public class MintFamilyBehaviorController : CustomBehaviorController
         {
             var glowEffect = Plant.mApp.InstantiateOffscreen(prefab, Plant.mController.gameObject.transform);
             glowEffect.SetName("MintGlowEffect");
-            glowEffect.transform.SetLocalPositionAndRotation(new Vector3(105, -135, 0), Quaternion.identity);
+            glowEffect.transform.SetLocalPositionAndRotation(new Vector3(105, -150, 0), Quaternion.identity);
             glowEffect.transform.localScale = new Vector3(1.5f, 1.5f, 1.5f);
         };
-        RegistryBridge.LoadAssetFromAssetBundle(CoreLibMod.ModId, "assets/vfx/mintfx/prefab/mint_fx.prefab", prefabCaller);
+        RegistryBridge.LoadAssetFromAssetBundle(CoreLibMod.ModId, "assets/vfx/mintfx/mintfx.prefab", prefabCaller);
         
         Plant.mController.gameObject.GetComponent<CustomPlantBehaviorController>().OnMintEffectStart();
     }

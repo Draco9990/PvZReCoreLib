@@ -1,5 +1,6 @@
 ﻿using MelonLoader;
 using PvZReCoreLib;
+using PvZReCoreLib.Console;
 using PvZReCoreLib.Content;
 using PvZReCoreLib.Content.Common.Skins;
 using PvZReCoreLib.Content.Plants.Patches;
@@ -45,9 +46,18 @@ public class CoreLibMod : MelonMod
         }
     }
 
+    public override void OnUpdate()
+    {
+        base.OnUpdate();
+        
+        DebugConsole.Update();
+    }
+
     public void FirstTimeInit()
     {
         Initd = true;
+        
+        DebugConsole.Start();
         
         PersistentStorage.Init();
         

@@ -60,6 +60,25 @@ public class ClassExtension<TClassType> where TClassType : Object
         return newExtension;
     }
     
+    public static TExtensionType GetExtension<TExtensionType>(TClassType classInstance)
+        where TExtensionType : ClassExtension<TClassType>
+    {
+        PurgeNullTableKeys();
+        
+        if (classExtensions.TryGetValue(classInstance, out var extensions))
+        {
+            foreach (var extension in extensions)
+            {
+                if (extension is TExtensionType typedExtension)
+                {
+                    return typedExtension;
+                }
+            }
+        }
+
+        return null;
+    }
+    
     public static void DeleteExtensionData(TClassType classInstance)
     {
         PurgeNullTableKeys();

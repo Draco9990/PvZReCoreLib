@@ -34,7 +34,7 @@ public abstract class SpriteRendererSkin : SkinType
             instance.SetName("SpriteRendererSkin");
             instance.transform.localScale = ScaleOverride;
 
-            instance.AddComponent<AnimationSoundPlayer>();
+            instance.transform.Find("anim").gameObject.AddComponent<AnimationScripts>();
         };
         RegistryBridge.LoadAssetFromAssetBundle<GameObject>(AssetBundleId, SkinPrefabId, onSkinLoaded);
     }
