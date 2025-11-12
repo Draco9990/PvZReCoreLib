@@ -41,7 +41,7 @@ public class MintFamilyBehaviorController : CustomBehaviorController
         {
             var glowEffect = Plant.mApp.InstantiateOffscreen(prefab, Plant.mController.gameObject.transform);
             glowEffect.SetName("MintGlowEffect");
-            glowEffect.transform.SetLocalPositionAndRotation(new Vector3(105, -150, 0), Quaternion.identity);
+            glowEffect.transform.SetLocalPositionAndRotation(new Vector3(105, -170, 0), Quaternion.identity);
             glowEffect.transform.localScale = new Vector3(1.5f, 1.5f, 1.5f);
         };
         RegistryBridge.LoadAssetFromAssetBundle(CoreLibMod.ModId, "assets/vfx/mintfx/mintfx.prefab", prefabCaller);
@@ -60,12 +60,12 @@ public class MintFamilyBehaviorController : CustomBehaviorController
         var glowEffect = Plant.mController.gameObject.transform.Find("MintGlowEffect");
         if (glowEffect != null)
         {
-            Animator animator = glowEffect.GetComponent<Animator>();
+            Animator animator = glowEffect.Find("anim")?.GetComponent<Animator>();
             if (animator != null)
             {
                 animator.Play("outro");
             }
-            Destroy(glowEffect, 1.1f);
+            Destroy(glowEffect.gameObject, 1.1f);
         }
         
         Plant.mController.gameObject.GetComponent<CustomPlantBehaviorController>().OnMintEffectEnd();

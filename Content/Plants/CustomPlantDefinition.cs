@@ -65,7 +65,7 @@ public class CustomPlantDefinition : PlantDefinition
     private void SetTextLocal(string text, bool localize, string fieldName)
     {
         string n = text;
-        if (localize)
+        if (!localize)
         {
             n = "[RAW]" + text;
         }
@@ -96,7 +96,7 @@ public class CustomPlantDefinition : PlantDefinition
     public void SetDescription(string text, bool localize = true)
     {
         string n = text;
-        if (localize)
+        if (!localize)
         {
             n = "[RAW]" + text;
         }
@@ -179,7 +179,7 @@ public class CustomAlmanacEntryData : AlmanacEntryData
     private void SetTextLocal(string text, bool localize, string fieldName)
     {
         string n = text;
-        if (localize)
+        if (!localize)
         {
             n = "[RAW]" + text;
         }

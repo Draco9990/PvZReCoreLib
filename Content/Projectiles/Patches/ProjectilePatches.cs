@@ -6,6 +6,7 @@ using Il2CppReloaded.Gameplay;
 using Il2CppReloaded.Services;
 using Il2CppSource.Utils;
 using MelonLoader;
+using PvZReCoreLib.Content.Common.Data;
 using PvZReCoreLib.Content.Common.Skins;
 using PvZReCoreLib.Content.Common.Skins.SkinDataTypes.subtypes;
 using PvZReCoreLib.Content.Plants;
@@ -24,6 +25,9 @@ public class Projectile_ProjectileInitialize_Patch
 {
     public static void Postfix(ref Projectile __instance)
     {
+        UniqueIdExtension uniqueIdExt = UniqueIdExtension.GetOrCreateExtension<UniqueIdExtension>(__instance);
+        uniqueIdExt.RandomizeUniqueId();
+        
         ProjectileExtension ext = ProjectileExtension.GetOrCreateExtension<ProjectileExtension>(__instance.mController.gameObject);
         ext.source = __instance;
         

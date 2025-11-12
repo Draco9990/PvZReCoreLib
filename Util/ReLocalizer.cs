@@ -99,6 +99,11 @@ public class FormattedLocalizationIdBinder_BindValue_Patch
 [HarmonyPatch(typeof(AlmanacEntryModel), nameof(AlmanacEntryModel.UpdateModelData))]
 public class AlmanacDescriptionBinder_BindString_Patch
 {
+    public static bool Prefix(AlmanacEntryModel __instance)
+    {
+        return true;
+    }
+    
     public static void Postfix(AlmanacEntryModel __instance)
     {
         CustomAlmanacEntryData entryData = __instance.m_entryData.TryCast<CustomAlmanacEntryData>();

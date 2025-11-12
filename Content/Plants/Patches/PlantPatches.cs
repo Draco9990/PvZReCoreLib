@@ -6,6 +6,7 @@ using Il2CppReloaded.Services;
 using Il2CppReloaded.TreeStateActivities;
 using Il2CppSource.Controllers;
 using Il2CppSource.Utils;
+using PvZReCoreLib.Content.Common.Data;
 using PvZReCoreLib.Content.Plants.Behavior;
 using PvZReCoreLib.Content.Plants.Behavior.CoreBehavior;
 using PvZReCoreLib.Content.Plants.Mint;
@@ -25,6 +26,9 @@ public class Plant_PlantInitialize_Patch
         {
             return;
         }
+        
+        UniqueIdExtension uniqueIdExt = UniqueIdExtension.GetOrCreateExtension<UniqueIdExtension>(__instance);
+        uniqueIdExt.RandomizeUniqueId();
         
         PlantExtension ext = PlantExtension.GetOrCreateExtension<PlantExtension>(__instance.mController.gameObject);
         ext.source = __instance;
