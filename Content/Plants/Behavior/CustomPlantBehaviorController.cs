@@ -164,6 +164,11 @@ public class Plant_PlantUpdate_Patch
 {
     public static bool Prefix(ref Plant __instance)
     {
+        if(__instance.mController == null || __instance.mController.gameObject == null)
+        {
+            return true;
+        }
+        
         if(__instance.mController.gameObject.TryGetComponent(out CustomPlantBehaviorController customPlantBehavior))
         {
             return customPlantBehavior.PrePlantUpdate();
@@ -174,6 +179,11 @@ public class Plant_PlantUpdate_Patch
     
     public static void Postfix(ref Plant __instance)
     {
+        if(__instance.mController == null || __instance.mController.gameObject == null)
+        {
+            return;
+        }
+        
         if(__instance.mController.gameObject.TryGetComponent(out CustomPlantBehaviorController customPlantBehavior))
         {
             customPlantBehavior.PostPlantUpdate();
@@ -186,6 +196,11 @@ public class Plant_PlantProductionUpdate_Patch
 {
     public static bool Prefix(ref Plant __instance)
     {
+        if(__instance.mController == null || __instance.mController.gameObject == null)
+        {
+            return true;
+        }
+        
         if(__instance.mController.gameObject.TryGetComponent(out CustomPlantBehaviorController customPlantBehavior))
         {
             return customPlantBehavior.PreUpdateProduction();
@@ -196,6 +211,11 @@ public class Plant_PlantProductionUpdate_Patch
     
     public static void Postfix(ref Plant __instance)
     {
+        if(__instance.mController == null || __instance.mController.gameObject == null)
+        {
+            return;
+        }
+        
         if(__instance.mController.gameObject.TryGetComponent(out CustomPlantBehaviorController customPlantBehavior))
         {
             customPlantBehavior.PostUpdateProduction();
@@ -208,6 +228,11 @@ public class Plant_PlantShooterUpdate_Patch
 {
     public static bool Prefix(ref Plant __instance)
     {
+        if(__instance.mController == null || __instance.mController.gameObject == null)
+        {
+            return true;
+        }
+        
         if(__instance.mController.gameObject.TryGetComponent(out CustomPlantBehaviorController customPlantBehavior))
         {
             return customPlantBehavior.PreUpdateShooter();
@@ -218,6 +243,11 @@ public class Plant_PlantShooterUpdate_Patch
     
     public static void Postfix(ref Plant __instance)
     {
+        if(__instance.mController == null || __instance.mController.gameObject == null)
+        {
+            return;
+        }
+        
         if(__instance.mController.gameObject.TryGetComponent(out CustomPlantBehaviorController customPlantBehavior))
         {
             customPlantBehavior.PostUpdateShooter();

@@ -137,8 +137,6 @@ public class CustomAlmanacEntryData : AlmanacEntryData
 
     public void LoadFrom(CustomPlantDefinition plantDef)
     {
-        var peashooterDef = ReloadedUtils.DataService.PlantAlmanacData[0];
-        
         SetTextLocal(plantDef.m_plantName, false, nameof(m_entryName));
         SetTextLocal(plantDef.m_description, false, nameof(m_entryDescription));
         m_descriptionHeader = plantDef.m_plantToolTip;
@@ -166,7 +164,6 @@ public class CustomAlmanacEntryData : AlmanacEntryData
         m_entrySunCost = plantDef.m_seedCost;
 
         m_entryPortrait = PersistentStorage.Store(new AssetReferenceSprite(plantDef.m_plantImage.m_AssetGUID));
-        m_entryPrefab = PersistentStorage.Store(new AssetReferenceGameObject(peashooterDef.m_entryPrefab.m_AssetGUID));
         
         m_entryThumbnail = PersistentStorage.Store(new AssetReferenceSprite(plantDef.m_plantImage.m_AssetGUID));
         m_entryThumbnailBackground = PersistentStorage.Store(new AssetReferenceSprite(plantDef.m_almanacBackground.m_AssetGUID));

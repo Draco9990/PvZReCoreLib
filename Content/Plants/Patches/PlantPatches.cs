@@ -21,7 +21,7 @@ namespace PvZReCoreLib.Content.Plants.Patches;
 public class Plant_PlantInitialize_Patch
 {
     public static void Postfix(ref Plant __instance)
-    {
+    { 
         if (ReplantedGet.TreeStateManager().Active.name == "AmanacPlants")
         {
             return;

@@ -100,7 +100,7 @@ public partial class SeedChooserScreen_CustomSeedsPatch
                 continue;
             }
             
-            UnityUtil.InjectScrollbar(seedChooser, grid, __instance.Has7Rows() ? 7 : 6);
+            UnityUtil.InjectScrollbar(seedChooser, grid, 6);
 
             break;
         }
