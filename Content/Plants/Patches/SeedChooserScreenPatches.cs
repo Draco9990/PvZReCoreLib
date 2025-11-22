@@ -20,7 +20,7 @@ public partial class SeedChooserScreen_CustomSeedsPatch
         patchMarker.IsPatched = true;
         
         // Add all custom seeds
-        for (int i = (int)SeedType.NumSeedsInChooser; i <= CustomContentRegistry.GetHighestCustomPlantTypeValue(); i++)
+        for (int i = (int)SeedType.NumSeedTypes; i <= CustomContentRegistry.GetHighestCustomPlantTypeValue(); i++)
         {
             // Init regular seeds
             {
@@ -138,7 +138,7 @@ public class SeedChooserScreen_ClickedSeedInChooser_Patch
         float deltaTime = Time.deltaTime;
     
         // Manually update any custom seeds
-        for (int i = (int)SeedType.NumSeedsInChooser; i <= CustomContentRegistry.GetHighestCustomPlantTypeValue(); i++)
+        for (int i = (int)SeedType.NumSeedTypes; i <= CustomContentRegistry.GetHighestCustomPlantTypeValue(); i++)
         {
             SeedType seedType = (SeedType)i;
             if (__instance.mApp.HasSeedType(seedType))

@@ -197,7 +197,7 @@ public class GetPlantDefinitionPatch
             return false;
         }
 
-        if (seedType >= SeedType.NumSeedsInChooser)
+        if (seedType >= SeedType.NumSeedTypes)
         {
             __result = CustomContentRegistry.EmptyPlantDefinition;
             return false;
@@ -234,7 +234,7 @@ public class UserService_HasSeedTypePatch
             return false;
         }
         
-        if (theSeedType >= SeedType.NumSeedsInChooser)
+        if (theSeedType >= SeedType.NumSeedTypes)
         {
             __result = false;
             return false;

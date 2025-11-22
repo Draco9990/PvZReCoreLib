@@ -24,7 +24,7 @@ public class SkinRegistry
     public static void Init()
     {
         // Register all default skins
-        for(int i = 0; i < (int)SeedType.NumSeedsInChooser; i++)
+        for(int i = 0; i < (int)SeedType.NumSeedTypes; i++)
         {
             SeedType seedType = (SeedType)i;
             var definition = AppCore.GetService<IDataService>().Cast<DataService>().GetPlantDefinition(seedType);
