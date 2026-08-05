@@ -18,18 +18,27 @@ public partial class AlmanacModel_CustomPlantEntriesPatch
     public static bool Prefix(ref AlmanacModel __instance)
     {
         activeInstance = __instance;
+        Patch();
         return true;
     }
-    
+
     public static void Patch()
     {
+        if (activeInstance == null)
+        {
+            MelonLoader.MelonLogger.Msg("[CoreLib] AlmanacModel_CustomPlantEntriesPatch.Patch() called before AlmanacModel exists - deferring until Almanac is opened.");
+            return;
+        }
+
         var patchMarker = PatchMarker<AlmanacModel>.GetOrCreateExtension<PatchMarker<AlmanacModel>>(activeInstance);
         if (patchMarker.IsPatched)
         {
             return;
         }
         patchMarker.IsPatched = true;
-        
+
+        MelonLoader.MelonLogger.Msg($"[CoreLib] Patching AlmanacModel with {CustomContentRegistry.GetAllCustomPlantTypes().Count} custom plant entries.");
+
         int index = activeInstance.m_plantsModel.m_entriesModel.m_models.Count;
         foreach (SeedType seedType in CustomContentRegistry.GetAllCustomPlantTypes())
         {
@@ -63,6 +72,8 @@ public static class TreeStateManagerTransitionLogger
 {
     static void Postfix(TreeStateManager __instance, TreeState treeState)
     {
+        MelonLoader.MelonLogger.Msg($"[CoreLib] TreeState transition -> '{treeState.name}'");
+
         if (treeState.name == "AmanacPlants")
         {
             foreach (Object o in UnityEngine.Object.FindObjectsOfTypeAll(Il2CppType.Of<GameObject>()))
