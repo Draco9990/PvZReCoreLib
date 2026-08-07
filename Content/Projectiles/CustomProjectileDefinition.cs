@@ -167,6 +167,11 @@ public class Projectile_Update_Patch
 {
     public static bool Prefix(ref Projectile __instance)
     {
+        if (__instance == null || __instance.mController == null || __instance.mController.gameObject == null)
+        {
+            return true;
+        }
+
         if(__instance.mController.gameObject.TryGetComponent(out CustomProjectileBehaviorController customProjectileBehavior))
         {
             return customProjectileBehavior.PreUpdate();
@@ -194,6 +199,11 @@ public class Projectile_UpdateMotion_Patch
 {
     public static bool Prefix(ref Projectile __instance)
     {
+        if (__instance == null || __instance.mController == null || __instance.mController.gameObject == null)
+        {
+            return true;
+        }
+
         if(__instance.mController.gameObject.TryGetComponent(out CustomProjectileBehaviorController customProjectileBehavior))
         {
             return customProjectileBehavior.PreUpdateNormalMotion();
@@ -221,6 +231,11 @@ public class Projectile_DoImpact_Patch
 {
     public static bool Prefix(ref Projectile __instance, ref Zombie theZombie)
     {
+        if (__instance == null || __instance.mController == null || __instance.mController.gameObject == null)
+        {
+            return true;
+        }
+
         if(__instance.mController.gameObject.TryGetComponent(out CustomProjectileBehaviorController customProjectileBehavior))
         {
             return customProjectileBehavior.PreDoImpact(theZombie);

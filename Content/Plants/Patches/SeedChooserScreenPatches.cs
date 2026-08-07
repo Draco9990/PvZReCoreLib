@@ -2,7 +2,6 @@
 using Il2CppReloaded.Gameplay;
 using PvZReCoreLib.Util;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace PvZReCoreLib.Content.Plants.Patches;
 
@@ -10,8 +9,6 @@ namespace PvZReCoreLib.Content.Plants.Patches;
 [HarmonyPatch(typeof(SeedChooserScreen), nameof(SeedChooserScreen.Update))]
 public partial class SeedChooserScreen_CustomSeedsPatch
 {
-    static bool scrollbarInjected = false;
-
     public static bool Prefix(ref SeedChooserScreen __instance)
     {
         var patchMarker = PatchMarker<SeedChooserScreen>.GetOrCreateExtension<PatchMarker<SeedChooserScreen>>(__instance);
@@ -111,54 +108,16 @@ public partial class SeedChooserScreen_CustomSeedsPatch
         return true;
     }
 
-    // Runs after the real Update() body has built the seed-packet UI children,
-    // so the grid has real content to measure when we wrap it in a scroll view.
-    public static void Postfix(ref SeedChooserScreen __instance)
-    {
-        if (scrollbarInjected)
-        {
-            return;
-        }
-
-        Scene activeScene = SceneManager.GetActiveScene();
-        foreach (GameObject root in activeScene.GetRootGameObjects())
-        {
-            var targetChildren = UnityUtil.FindDeepChildrenByName(root.transform, "P_SeedChooser");
-            if (targetChildren.Count == 0)
-            {
-                continue;
-            }
-
-            var seedChooserRoot = targetChildren.First();
-            var seedChooser = seedChooserRoot.transform.FindChild("Canvas/Layout/Center/Panel/SeedChooser");
-            if(seedChooser == null)
-            {
-                MelonLoader.MelonLogger.Warning("[SeedChooserScreen] Found 'P_SeedChooser' but not child path 'Canvas/Layout/Center/Panel/SeedChooser' - scrollbar not injected.");
-                continue;
-            }
-
-            var grid = seedChooser.FindChild("Grid");
-            if(grid == null)
-            {
-                MelonLoader.MelonLogger.Warning("[SeedChooserScreen] Found 'SeedChooser' but not child 'Grid' - scrollbar not injected.");
-                continue;
-            }
-
-            if (grid.childCount == 0)
-            {
-                // UI not built yet on this pass - try again next frame.
-                return;
-            }
-
-            scrollbarInjected = true;
-            MelonLoader.MelonLogger.Msg($"[SeedChooserScreen] Injecting scrollbar into '{grid.name}' (childCount={grid.childCount}).");
-            UnityUtil.InjectScrollbar(seedChooser, grid, 6);
-
-            return;
-        }
-
-        MelonLoader.MelonLogger.Warning("[SeedChooserScreen] Could not locate 'P_SeedChooser' anywhere in the active scene - custom seeds may be positioned off-screen with no scrollbar to reach them.");
-    }
+    // Scrollbar injection removed for now: SeedChooserScreen.Update() keeps firing well past the
+    // seed-chooser menu closing (confirmed live - a Postfix here was still running every frame
+    // deep into active gameplay), so the full scene root-object enumeration + recursive deep-child
+    // search this used to do on every failed attempt ran unconditionally every single frame for
+    // the rest of the session once the grid stopped being found (e.g. once gameplay starts and the
+    // menu's UI is gone) - cost scaling with total scene object count, which was the actual cause
+    // of reported choppiness that got worse as more zombies piled up. The feature never actually
+    // succeeded in practice either (extra seeds are visible in one row, but not reachable via
+    // scroll), so this is worth rebuilding properly - gated on actually being on the seed-chooser
+    // screen, not on Update() continuing to fire - rather than re-adding the same unbounded retry.
 }
 
 [HarmonyPatch(typeof(SeedChooserScreen), nameof(SeedChooserScreen.GetChosenSeedFromType))]

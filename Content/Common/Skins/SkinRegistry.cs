@@ -73,7 +73,7 @@ public class CustomSkinRegistry_SetCurrentSkin_Patch
         {
             extension.CurrentSkin.CleanUpSkin(__instance.gameObject);
         }
-        
+
         var requestedSkin = __instance.m_currentSkin;
         if(SkinRegistry.PlantSkins.TryGetValue(requestedSkin, out var skinType))
         {
@@ -97,7 +97,7 @@ public class CustomSkinRegistry_PlayAnimation_Patch
         {
             return;
         }
-        
+
         plantExtension.CurrentSkin.PlayAnimation(__instance.gameObject, animationName, track, fps, loopType);
     }
 }
