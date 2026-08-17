@@ -69,17 +69,33 @@ public class CustomSkinRegistry_SetCurrentSkin_Patch
     public static void Postfix(CharacterSkinController __instance)
     {
         var extension = PlantExtension.GetOrCreateExtension<PlantExtension>(__instance.gameObject);
-        if(extension.CurrentSkin != null)
+        var requestedSkin = __instance.m_currentSkin;
+        if (!SkinRegistry.PlantSkins.TryGetValue(requestedSkin, out var skinType))
+        {
+            return;
+        }
+
+        // SetCurrentSkin is called from CharacterSkinController.LateUpdate() every
+        // frame, not just when the skin actually changes - without this guard we
+        // were tearing down and reinstantiating the whole skin GameObject
+        // (Animator included) 60x/second for every custom-skinned plant. That's
+        // invisible for a plant whose resting animation is the Animator's own
+        // default state, but it visibly snaps any plant whose current resting
+        // state differs from that default (e.g. Bamboo Spartan sitting in
+        // "battle_trance_idle1" post-shield-break) back to the default pose on
+        // the very next frame.
+        if (ReferenceEquals(extension.CurrentSkin, skinType))
+        {
+            return;
+        }
+
+        if (extension.CurrentSkin != null)
         {
             extension.CurrentSkin.CleanUpSkin(__instance.gameObject);
         }
 
-        var requestedSkin = __instance.m_currentSkin;
-        if(SkinRegistry.PlantSkins.TryGetValue(requestedSkin, out var skinType))
-        {
-            skinType.ApplySkin(__instance.gameObject);
-            extension.CurrentSkin = (SkinType)skinType;
-        }
+        skinType.ApplySkin(__instance.gameObject);
+        extension.CurrentSkin = (SkinType)skinType;
     }
 }
 
