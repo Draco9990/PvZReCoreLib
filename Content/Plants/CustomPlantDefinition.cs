@@ -23,6 +23,15 @@ public class CustomPlantDefinition : PlantDefinition
     public int m_health = 300;
     public MintFamily m_mintFamily = MintFamily.None;
 
+    // Native Board.CanPlantAt hardcodes its own ground-only rejection
+    // (PlantingReason.NeedsGround) against a fixed list of vanilla SeedTypes
+    // (Potato Mine, Spikeweed, etc.) the same way Plant.IsSpiky() does - no
+    // data field to opt a custom plant into it, so a custom SeedType would
+    // otherwise be plantable on lilypads/water regardless. Set true for a
+    // plant that needs to burrow into actual ground (see
+    // Board_CanPlantAt_RequiresGround_Patch in PlantPatches.cs).
+    public bool m_requiresGround = false;
+
     public string m_description = "";
 
     public AssetReferenceSprite m_almanacBackground;

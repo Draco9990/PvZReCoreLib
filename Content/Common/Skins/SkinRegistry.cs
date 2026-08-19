@@ -6,6 +6,7 @@ using Il2CppReloaded.Services;
 using PvZReCoreLib.Content.Common.Skins.SkinDataTypes;
 using PvZReCoreLib.Content.Common.Skins.SkinDataTypes.subtypes;
 using PvZReCoreLib.Content.Plants;
+using PvZReCoreLib.Content.Plants.Behavior;
 using PvZReCoreLib.Util;
 
 namespace PvZReCoreLib.Content.Common.Skins;
@@ -110,6 +111,30 @@ public class CustomSkinRegistry_PlayAnimation_Patch
     {
         var plantExtension = PlantExtension.GetOrCreateExtension<PlantExtension>(__instance.gameObject.transform.parent.gameObject);
         if (plantExtension == null || plantExtension.CurrentSkin == null)
+        {
+            return;
+        }
+
+        // Plant.DoBlink() - a native cosmetic eye-blink system, random-rolled
+        // (Common.Rand/RandRangeInt) on every plant's update tick regardless of
+        // skin - calls this exact PlayAnimation overload to reset to "idle" as
+        // part of its own routine (confirmed via the game's IL2CPP call-graph
+        // metadata: PlayAnimation(string, CharacterTracks, float, AnimLoopType)
+        // lists Plant.DoBlink as one of its 16 callers). Harmless for native
+        // Spine-skeleton plants, whose "idle" really is their resting
+        // animation and whose blink is a separate eye slot/texture overlay -
+        // but any custom sprite-based plant has no such separate blink layer,
+        // so this call instead yanks its entire full-body sprite swap back to
+        // "idle" regardless of what its own CustomPlantBehaviorController
+        // currently wants shown. Those controllers are the sole authority over
+        // their own animation state, so blink's forced "idle" is dropped for
+        // them - but only blink's: a custom plant that legitimately has its
+        // own state literally named "idle" (e.g. Endurian's tier-1 pose) still
+        // needs to reach the animator when IT is the one asking, which is
+        // exactly what IsExecutingOwnPlayAnimation distinguishes.
+        if (animationName == "idle"
+            && plantExtension.CustomBehaviorController != null
+            && !CustomPlantBehaviorController.IsExecutingOwnPlayAnimation)
         {
             return;
         }

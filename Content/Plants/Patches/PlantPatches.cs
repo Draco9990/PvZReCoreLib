@@ -214,6 +214,93 @@ public class Board_PostDeserialize_ReattachCustomPlantBehavior_Patch
     }
 }
 
+[HarmonyPatch(typeof(Plant), nameof(Plant.IsSpiky))]
+public class Plant_IsSpiky_Patch
+{
+    // Native IsSpiky() only recognizes vanilla SeedTypes (Spikeweed/SpikeRock)
+    // and has no data-driven field to opt a custom plant into, so it always
+    // returns false for one regardless of what we do. Route custom plants
+    // through their own behavior controller instead - see
+    // CustomPlantBehaviorController.IsSpiky for what this actually gates.
+    public static bool Prefix(Plant __instance, ref bool __result)
+    {
+        if (__instance == null || __instance.mController == null || __instance.mController.gameObject == null)
+        {
+            return true;
+        }
+
+        if (!__instance.mController.gameObject.TryGetComponent(out CustomPlantBehaviorController comp))
+        {
+            return true;
+        }
+
+        __result = comp.IsSpiky();
+        return false;
+    }
+}
+
+[HarmonyPatch(typeof(Zombie), nameof(Zombie.CanTargetPlant), new[] { typeof(Plant), typeof(ZombieAttackType) })]
+public class Zombie_CanTargetPlant_Patch
+{
+    // Separate from Plant_IsSpiky_Patch on purpose - see
+    // CustomPlantBehaviorController.CanBeTargetedBy for why. Only intervenes
+    // (skips native) when the plant's own controller explicitly vetoes being
+    // targeted; otherwise falls through to native logic unchanged, which
+    // already handles pools/ladders/flowerpots/IsSpiky correctly on its own.
+    public static bool Prefix(Zombie __instance, Plant thePlant, ZombieAttackType theAttackType, ref bool __result)
+    {
+        if (thePlant == null || thePlant.mController == null || thePlant.mController.gameObject == null)
+        {
+            return true;
+        }
+
+        if (!thePlant.mController.gameObject.TryGetComponent(out CustomPlantBehaviorController comp))
+        {
+            return true;
+        }
+
+        if (comp.CanBeTargetedBy(theAttackType))
+        {
+            return true;
+        }
+
+        __result = false;
+        return false;
+    }
+}
+
+[HarmonyPatch(typeof(Board), nameof(Board.CanPlantAt), new[] { typeof(int), typeof(int), typeof(SeedType) })]
+public class Board_CanPlantAt_RequiresGround_Patch
+{
+    // Postfix, not Prefix - native CanPlantAt already handles plenty of other
+    // rejection reasons (occupied square, not past the line, needs upgrade,
+    // etc.) that must stay intact. This only adds the ground-only check on
+    // top, and only overrides an otherwise-Ok result.
+    public static void Postfix(Board __instance, int theGridX, int theGridY, SeedType theType, ref PlantingReason __result)
+    {
+        if (__result != PlantingReason.Ok)
+        {
+            return;
+        }
+
+        if (!CustomContentRegistry.IsValidCustomPlantType(theType))
+        {
+            return;
+        }
+
+        var plantDef = AppCore.GetService<IDataService>().Cast<DataService>().GetPlantDefinition(theType);
+        if (plantDef.TryCast<CustomPlantDefinition>() is not { } customDef || !customDef.m_requiresGround)
+        {
+            return;
+        }
+
+        if (__instance.IsPoolSquare(theGridX, theGridY))
+        {
+            __result = PlantingReason.NeedsGround;
+        }
+    }
+}
+
 public class PlantPreviewWorkaround
 {
     private static SeedType cachedOverride = SeedType.None;
