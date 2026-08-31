@@ -60,21 +60,29 @@ public class CoreLibMod : MelonMod
         DebugConsole.Start();
         
         PersistentStorage.Init();
-        
+
         RegistryBridge.Init();
-        
+
         ReLocalizer.Init();
-        
+
         SkinRegistry.Init();
         CustomContentRegistry.Init();
-        
-        AlmanacModel_CustomPlantEntriesPatch.Patch();
-        
+
+        MelonLoader.MelonLogger.Msg($"[CoreLib] Registered {CustomContentRegistry.GetAllCustomPlantTypes().Count} custom plant(s) before Frontend init.");
+
+        try
+        {
+            AlmanacModel_CustomPlantEntriesPatch.Patch();
+        }
+        catch (Exception e)
+        {
+            MelonLoader.MelonLogger.Warning($"[CoreLib] AlmanacModel_CustomPlantEntriesPatch.Patch() failed (likely because AlmanacModel hasn't run yet) - will retry on first Almanac open: {e}");
+        }
+
         RegistryBridge.RegisterAssetBundle(ModId, "Mods/CoreLib/pvzcorelibassetbundle");
-        
+
         OnCoreLibInit?.Invoke();
     }
-
 
     #endregion
 }

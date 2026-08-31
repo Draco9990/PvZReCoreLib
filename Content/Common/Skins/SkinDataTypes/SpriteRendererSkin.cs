@@ -1,4 +1,6 @@
 ﻿using Il2CppReloaded.Characters;
+using Il2CppSource.Controllers;
+using MelonLoader;
 using PvZReCoreLib.Content.Common.Audio;
 using PvZReCoreLib.Content.Plants;
 using PvZReCoreLib.Util;
@@ -35,6 +37,27 @@ public abstract class SpriteRendererSkin : SkinType
             instance.transform.localScale = ScaleOverride;
 
             instance.transform.Find("anim").gameObject.AddComponent<AnimationScripts>();
+
+            // ReloadedController.InitSorting() only scans for Renderer components once, at Awake -
+            // well before this async asset-bundle load finishes and the skin's own renderers exist.
+            // Those renderers never get registered with the game's depth-sorting system as a result,
+            // so they render at Unity's default sortingOrder/layer - which sits above fog and other
+            // properly-managed layers. Re-running InitSorting() now that the renderers actually
+            // exist fixes that; plants don't move once placed, so a one-time re-scan is sufficient.
+            ReloadedController reloadedController = obj.GetComponent<ReloadedController>();
+            if (reloadedController == null && obj.transform.parent != null)
+            {
+                reloadedController = obj.transform.parent.GetComponent<ReloadedController>();
+            }
+
+            if (reloadedController != null)
+            {
+                reloadedController.InitSorting();
+            }
+            else
+            {
+                MelonLogger.Warning($"[CoreLib] SpriteRendererSkin.ApplySkin: could not find a ReloadedController on '{obj.name}' or its parent to refresh sorting - custom skin sprites may render on the wrong layer.");
+            }
         };
         RegistryBridge.LoadAssetFromAssetBundle<GameObject>(AssetBundleId, SkinPrefabId, onSkinLoaded);
     }

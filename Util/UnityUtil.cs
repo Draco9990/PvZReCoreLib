@@ -224,6 +224,23 @@ public class UnityUtil
         
         // Force layout rebuild
         LayoutRebuilder.ForceRebuildLayoutImmediate(grid);
+
+        // Diagnostics: figure out why scrolling may or may not actually work. If grid has no
+        // GridLayoutGroup/ContentSizeFitter, nothing recomputes its height from childCount, and
+        // our sizeDelta=(0,0) above may be leaving content no taller than (or shorter than) the
+        // viewport - which means the ScrollRect has nothing to actually scroll through.
+        var gridLayoutGroup = grid.GetComponent<GridLayoutGroup>();
+        var contentSizeFitter = grid.GetComponent<ContentSizeFitter>();
+        MelonLogger.Msg($"[CoreLib] InjectScrollbar diagnostics: root.sizeDelta={injectedRootRectT.sizeDelta}, root.rect={injectedRootRectT.rect}, viewport.rect={injectedViewportRectT.rect}, grid.sizeDelta={grid.sizeDelta}, grid.rect={grid.rect}, grid.childCount={grid.childCount}, hasGridLayoutGroup={gridLayoutGroup != null}, hasContentSizeFitter={contentSizeFitter != null}");
+        if (gridLayoutGroup != null)
+        {
+            MelonLogger.Msg($"[CoreLib]   GridLayoutGroup: cellSize={gridLayoutGroup.cellSize}, spacing={gridLayoutGroup.spacing}, constraint={gridLayoutGroup.constraint}, constraintCount={gridLayoutGroup.constraintCount}, padding=(l{gridLayoutGroup.padding.left},t{gridLayoutGroup.padding.top},r{gridLayoutGroup.padding.right},b{gridLayoutGroup.padding.bottom})");
+        }
+        if (contentSizeFitter != null)
+        {
+            MelonLogger.Msg($"[CoreLib]   ContentSizeFitter: horizontalFit={contentSizeFitter.horizontalFit}, verticalFit={contentSizeFitter.verticalFit}");
+        }
+        MelonLogger.Msg($"[CoreLib]   ScrollRect: movementType={injectedRootScrollRect.movementType}, verticalNormalizedPosition={injectedRootScrollRect.verticalNormalizedPosition}, content==grid: {injectedRootScrollRect.content == grid}");
     }
 
     #endregion

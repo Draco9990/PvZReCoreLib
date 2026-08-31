@@ -85,7 +85,7 @@ public class Plant_Fire_Patch
 {
     public static bool Prefix(ref Plant __instance, Zombie theTargetZombie, int theRow, PlantWeapon thePlantWeapon)
     {
-        if ((int)__instance.mSeedType >= 1000)
+        if (CustomContentRegistry.IsValidCustomPlantType(__instance.mSeedType))
         {
             return false;
         }

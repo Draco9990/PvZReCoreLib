@@ -117,6 +117,46 @@ public class CustomPlantBehaviorController : CustomBehaviorController
         bMintEffectActive = false;
     }
 
+    // Backs the Plant.IsSpiky() Harmony patch (see PlantPatches.cs) - native
+    // IsSpiky() only recognizes vanilla SeedTypes (Spikeweed/SpikeRock), so it
+    // always returns false for a custom plant regardless of what we set here.
+    // Overriding this is what tells the native engine "let zombies walk over
+    // me instead of stopping to eat me" (Zombie.CanTargetPlant excludes spiky
+    // plants from normal chew-targeting) and "squish me specially every step
+    // a zombie takes over me" (Zombie.CheckSquish/SquishAllInSquare, which is
+    // also what makes Zomboni get destroyed instead of squishing a spiky
+    // plant on contact). It's a live query, not a fixed flag, specifically so
+    // a plant can be conditionally spiky - e.g. a Celery Stalker-style plant
+    // that's spiky while hidden and stops being spiky once it stands up.
+    //
+    // Actual damage dealt to zombies walking over a spiky custom plant is
+    // NOT handled by this - that's on the plant's own behavior, the same way
+    // Endurian computes its own damage rather than relying on native combat.
+    // This only stops the native engine from treating the plant as a normal
+    // eat-target.
+    public virtual bool IsSpiky()
+    {
+        return false;
+    }
+
+    // Backs the Zombie.CanTargetPlant Harmony patch (see PlantPatches.cs) -
+    // a separate, more specific hook than IsSpiky. CanTargetPlant itself
+    // calls IsSpiky internally to exclude spiky plants from normal chew
+    // targeting, but SquishAllInSquare ALSO calls IsSpiky separately to
+    // decide whether a driving zombie (e.g. Zomboni) gets destroyed instead
+    // of squishing the plant - meaning IsSpiky alone can't grant "walk over
+    // me, don't eat me" without also granting "destroy any vehicle that
+    // touches me". This hook lets a plant veto being eaten per attack type
+    // (Chew/DriveOver/Vault/Ladder) without ever setting IsSpiky, so e.g. a
+    // hidden ambush plant can avoid being eaten while it's hidden without
+    // also turning into a Zomboni-killer. A real Spikeweed-style plant that
+    // wants the full vehicle-destroying treatment should use IsSpiky
+    // instead.
+    public virtual bool CanBeTargetedBy(ZombieAttackType attackType)
+    {
+        return true;
+    }
+
     public override void Reset()
     {
         base.Reset();
@@ -151,9 +191,25 @@ public class CustomPlantBehaviorController : CustomBehaviorController
         audioSrv.m_audioSources.GetAudioSource(Constants.Sound.SOUND_PLANT).m_audioSource.PlayOneShot(sfx);
     }
 
+    // Lets SkinRegistry's PlayAnimation postfix tell "we asked for this" apart
+    // from Plant.DoBlink()'s native forced PlayAnimation("idle") calls, which
+    // both funnel through the exact same native method - see the postfix for
+    // why that distinction matters. Safe as a plain static bool: Unity's
+    // update loop is single-threaded and PlayAnimation calls are synchronous,
+    // so there's never a window where two plants' calls could interleave.
+    public static bool IsExecutingOwnPlayAnimation { get; private set; }
+
     public void PlayAnimation(string animation)
     {
-        Plant.mController.AnimationController.PlayAnimation(animation, CharacterTracks.NULL, 30, AnimLoopType.PlayOnce);
+        IsExecutingOwnPlayAnimation = true;
+        try
+        {
+            Plant.mController.AnimationController.PlayAnimation(animation, CharacterTracks.NULL, 30, AnimLoopType.PlayOnce);
+        }
+        finally
+        {
+            IsExecutingOwnPlayAnimation = false;
+        }
     }
 
     #endregion

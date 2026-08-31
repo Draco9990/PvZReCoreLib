@@ -60,7 +60,18 @@ public class CustomContentRegistry
     
     public static SeedType RequestFreeSeedType()
     {
-        for (int i = 1000; i < int.MaxValue; i++)
+        // Values used to start at 1000 to stay well clear of any future vanilla SeedType additions,
+        // but code elsewhere in the game (e.g. SeedChooserScreen.CloseSeedChooser) indexes internal
+        // arrays/lists by the raw numeric SeedType value, sized close to the real plant count - a
+        // value that large threw an ArgumentOutOfRangeException there.
+        //
+        // Starting right at NumSeedTypes isn't safe either: the SeedType enum doesn't end there.
+        // Values 54-81 are real, already-meaningful entries (Beghouled/Slot Machine minigame button
+        // IDs, then a run of zombie-cursor pseudo-types), all reusing the same enum as a general ID
+        // space. LastZombieIndex (81) is the actual last defined value, so start just past that -
+        // close enough to the vanilla range to avoid blowing out array/list bounds, but past every
+        // value that already means something else.
+        for (int i = (int)SeedType.LastZombieIndex + 1; i < int.MaxValue; i++)
         {
             SeedType potentialSeedType = (SeedType)i;
             if (!_customPlantDefinitions.ContainsKey(potentialSeedType))
@@ -68,7 +79,7 @@ public class CustomContentRegistry
                 return (SeedType)i;
             }
         }
-        
+
         throw new Exception("No free SeedType values available.");
     }
 
@@ -84,8 +95,10 @@ public class CustomContentRegistry
         }
         
         _customSeedTypes.Add(plantData.SeedType);
-        
+
         _customPlantDefinitions[plantData.SeedType] = plantData;
+
+        MelonLoader.MelonLogger.Msg($"[CoreLib] Registered custom plant '{plantData.m_plantName}' ({plantData.GetType().Name}) as SeedType {(int)plantData.SeedType}.");
 
         var almanacData = PersistentStorage.Store(ScriptableObject.CreateInstance<CustomAlmanacEntryData>());
         almanacData.LoadFrom(plantData);
@@ -169,7 +182,8 @@ public class CustomContentRegistry
     
     public static ProjectileType RequestFreeProjectileType()
     {
-        for (int i = 1000; i < int.MaxValue; i++)
+        // See RequestFreeSeedType() - same reasoning, using ProjectileType.NumProjectiles instead.
+        for (int i = (int)ProjectileType.NumProjectiles; i < int.MaxValue; i++)
         {
             ProjectileType potentialType = (ProjectileType)i;
             if (!_customProjectileDefinitions.ContainsKey(potentialType))
@@ -177,7 +191,7 @@ public class CustomContentRegistry
                 return (ProjectileType)i;
             }
         }
-        
+
         throw new Exception("No free ProjectileType values available.");
     }
 
