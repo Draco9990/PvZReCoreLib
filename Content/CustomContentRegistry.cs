@@ -211,12 +211,22 @@ public class GetPlantDefinitionPatch
             return false;
         }
 
-        if (seedType >= SeedType.NumSeedTypes)
+        // NumSeedTypes (53) isn't actually where meaningful values end - see
+        // RequestFreeSeedType's comment: 54-81 are real vanilla IDs
+        // (Beghouled/Slot Machine minigame buttons, then all 21 zombie
+        // cursor pseudo-types used by I, Zombie mode's zombie-selection
+        // bar), reusing this same enum as a general ID space. Using
+        // NumSeedTypes here forced every one of those - including every
+        // zombie type - through EmptyPlantDefinition (blank icon, no
+        // m_plantImage), since GetPlantDefinition is also how that bar
+        // sources each zombie's thumbnail sprite. LastZombieIndex (81) is
+        // the real last defined value.
+        if (seedType > SeedType.LastZombieIndex)
         {
             __result = CustomContentRegistry.EmptyPlantDefinition;
             return false;
         }
-            
+
         return true;
     }
 }
@@ -247,8 +257,11 @@ public class UserService_HasSeedTypePatch
             __result = true;
             return false;
         }
-        
-        if (theSeedType >= SeedType.NumSeedTypes)
+
+        // Same reserved-range fix as GetPlantDefinitionPatch above - 54-81
+        // are real vanilla IDs (minigame buttons, then zombie pseudo-types),
+        // not unregistered custom slots.
+        if (theSeedType > SeedType.LastZombieIndex)
         {
             __result = false;
             return false;
