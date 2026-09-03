@@ -214,39 +214,18 @@ public class Board_PostDeserialize_ReattachCustomPlantBehavior_Patch
     }
 }
 
-[HarmonyPatch(typeof(Plant), nameof(Plant.IsSpiky))]
-public class Plant_IsSpiky_Patch
-{
-    // Native IsSpiky() only recognizes vanilla SeedTypes (Spikeweed/SpikeRock)
-    // and has no data-driven field to opt a custom plant into, so it always
-    // returns false for one regardless of what we do. Route custom plants
-    // through their own behavior controller instead - see
-    // CustomPlantBehaviorController.IsSpiky for what this actually gates.
-    public static bool Prefix(Plant __instance, ref bool __result)
-    {
-        if (__instance == null || __instance.mController == null || __instance.mController.gameObject == null)
-        {
-            return true;
-        }
-
-        if (!__instance.mController.gameObject.TryGetComponent(out CustomPlantBehaviorController comp))
-        {
-            return true;
-        }
-
-        __result = comp.IsSpiky();
-        return false;
-    }
-}
-
 [HarmonyPatch(typeof(Zombie), nameof(Zombie.CanTargetPlant), new[] { typeof(Plant), typeof(ZombieAttackType) })]
 public class Zombie_CanTargetPlant_Patch
 {
-    // Separate from Plant_IsSpiky_Patch on purpose - see
-    // CustomPlantBehaviorController.CanBeTargetedBy for why. Only intervenes
-    // (skips native) when the plant's own controller explicitly vetoes being
-    // targeted; otherwise falls through to native logic unchanged, which
-    // already handles pools/ladders/flowerpots/IsSpiky correctly on its own.
+    // Only intervenes (skips native) when the plant's own controller
+    // explicitly vetoes being targeted; otherwise falls through to native
+    // logic unchanged (default CanBeTargetedBy is true), which already
+    // handles pools/ladders/flowerpots/IsSpiky correctly on its own - unlike
+    // a since-removed Plant.IsSpiky() patch, this one is safe for vanilla
+    // plants that happen to have a CoreLib-managed behavior controller
+    // (e.g. Spikeweed's SpikeweedBehaviorController) since "true" here means
+    // "don't override," not a definitive answer that could clash with
+    // native behavior.
     public static bool Prefix(Zombie __instance, Plant thePlant, ZombieAttackType theAttackType, ref bool __result)
     {
         if (thePlant == null || thePlant.mController == null || thePlant.mController.gameObject == null)

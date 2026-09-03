@@ -117,41 +117,27 @@ public class CustomPlantBehaviorController : CustomBehaviorController
         bMintEffectActive = false;
     }
 
-    // Backs the Plant.IsSpiky() Harmony patch (see PlantPatches.cs) - native
-    // IsSpiky() only recognizes vanilla SeedTypes (Spikeweed/SpikeRock), so it
-    // always returns false for a custom plant regardless of what we set here.
-    // Overriding this is what tells the native engine "let zombies walk over
-    // me instead of stopping to eat me" (Zombie.CanTargetPlant excludes spiky
-    // plants from normal chew-targeting) and "squish me specially every step
-    // a zombie takes over me" (Zombie.CheckSquish/SquishAllInSquare, which is
-    // also what makes Zomboni get destroyed instead of squishing a spiky
-    // plant on contact). It's a live query, not a fixed flag, specifically so
-    // a plant can be conditionally spiky - e.g. a Celery Stalker-style plant
-    // that's spiky while hidden and stops being spiky once it stands up.
+    // Backs the Zombie.CanTargetPlant Harmony patch (see PlantPatches.cs).
+    // Lets a plant veto being eaten per attack type (Chew/DriveOver/Vault/
+    // Ladder) - e.g. a hidden ambush plant that's untargetable while hidden
+    // but a normal target once revealed. Default true means "don't
+    // override, let native decide," so a vanilla plant that happens to have
+    // a CoreLib-managed behavior controller (e.g. Spikeweed's
+    // SpikeweedBehaviorController) is unaffected unless it explicitly
+    // overrides this.
     //
-    // Actual damage dealt to zombies walking over a spiky custom plant is
-    // NOT handled by this - that's on the plant's own behavior, the same way
-    // Endurian computes its own damage rather than relying on native combat.
-    // This only stops the native engine from treating the plant as a normal
-    // eat-target.
-    public virtual bool IsSpiky()
-    {
-        return false;
-    }
-
-    // Backs the Zombie.CanTargetPlant Harmony patch (see PlantPatches.cs) -
-    // a separate, more specific hook than IsSpiky. CanTargetPlant itself
-    // calls IsSpiky internally to exclude spiky plants from normal chew
-    // targeting, but SquishAllInSquare ALSO calls IsSpiky separately to
-    // decide whether a driving zombie (e.g. Zomboni) gets destroyed instead
-    // of squishing the plant - meaning IsSpiky alone can't grant "walk over
-    // me, don't eat me" without also granting "destroy any vehicle that
-    // touches me". This hook lets a plant veto being eaten per attack type
-    // (Chew/DriveOver/Vault/Ladder) without ever setting IsSpiky, so e.g. a
-    // hidden ambush plant can avoid being eaten while it's hidden without
-    // also turning into a Zomboni-killer. A real Spikeweed-style plant that
-    // wants the full vehicle-destroying treatment should use IsSpiky
-    // instead.
+    // There was previously also a Plant.IsSpiky() hook here for the full
+    // Spikeweed/SpikeRock treatment (zombies walk over the plant entirely,
+    // vehicles like Zomboni get destroyed on contact instead of squishing
+    // it) - removed because its TryGetComponent<CustomPlantBehaviorController>
+    // check caught vanilla plants with a CoreLib-managed controller too
+    // (same category as above), and unlike this method, IsSpiky() has no
+    // "don't override" default - intercepting it always returns a definitive
+    // answer, so the base class's false silently broke real Spikeweed's
+    // native true and let zombies eat it. If a genuine walk-over/vehicle-
+    // destroying custom plant is needed again, it needs a narrower gate than
+    // "has any CustomPlantBehaviorController" (e.g. checking
+    // CustomContentRegistry.IsValidCustomPlantType(plant.mSeedType) too).
     public virtual bool CanBeTargetedBy(ZombieAttackType attackType)
     {
         return true;
