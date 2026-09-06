@@ -211,17 +211,24 @@ public class GetPlantDefinitionPatch
             return false;
         }
 
-        // NumSeedTypes (53) isn't actually where meaningful values end - see
-        // RequestFreeSeedType's comment: 54-81 are real vanilla IDs
-        // (Beghouled/Slot Machine minigame buttons, then all 21 zombie
-        // cursor pseudo-types used by I, Zombie mode's zombie-selection
-        // bar), reusing this same enum as a general ID space. Using
-        // NumSeedTypes here forced every one of those - including every
-        // zombie type - through EmptyPlantDefinition (blank icon, no
-        // m_plantImage), since GetPlantDefinition is also how that bar
-        // sources each zombie's thumbnail sprite. LastZombieIndex (81) is
-        // the real last defined value.
-        if (seedType > SeedType.LastZombieIndex)
+        // NumSeedTypes (53) isn't where meaningful values end - 54-80 are
+        // real vanilla IDs (Beghouled/Slot Machine minigame buttons, then
+        // all real zombie cursor pseudo-types used by I, Zombie mode's
+        // zombie-selection bar), reusing this same enum as a general ID
+        // space. But NumSeedTypes and LastZombieIndex are themselves pure
+        // count/boundary sentinels, not real entries - confirmed live: the
+        // game's own "PurchaseItem" screen iterates a range that includes
+        // both sentinel values literally, and native GetPlantDefinition
+        // throws ArgumentOutOfRangeException for either one directly
+        // ("Unable to find Plant Definition for NumSeedTypes" /
+        // "...for LastZombieIndex"). So LastZombieIndex is a one-past-the-
+        // end marker like NumSeedTypes, not an inclusive "last real zombie"
+        // - the real zombie range is NumSeedTypes+1 (54) through
+        // LastZombieIndex-1 (80). Both sentinels, and anything beyond
+        // LastZombieIndex (used for custom plant SeedTypes, see
+        // RequestFreeSeedType), get the safe EmptyPlantDefinition; the real
+        // 54-80 range falls through to native untouched.
+        if (seedType == SeedType.NumSeedTypes || seedType >= SeedType.LastZombieIndex)
         {
             __result = CustomContentRegistry.EmptyPlantDefinition;
             return false;
@@ -258,10 +265,12 @@ public class UserService_HasSeedTypePatch
             return false;
         }
 
-        // Same reserved-range fix as GetPlantDefinitionPatch above - 54-81
-        // are real vanilla IDs (minigame buttons, then zombie pseudo-types),
-        // not unregistered custom slots.
-        if (theSeedType > SeedType.LastZombieIndex)
+        // Same fix as GetPlantDefinitionPatch above - NumSeedTypes and
+        // LastZombieIndex are both pure boundary sentinels (confirmed live
+        // via native crashes when either is used directly), not real
+        // entries; the real vanilla range is 54-80 (minigame buttons, then
+        // zombie pseudo-types).
+        if (theSeedType == SeedType.NumSeedTypes || theSeedType >= SeedType.LastZombieIndex)
         {
             __result = false;
             return false;
