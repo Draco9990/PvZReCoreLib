@@ -19,6 +19,8 @@ public partial class SeedChooserScreen_CustomSeedsPatch
         patchMarker.IsPatched = true;
 
         int customPlantCount = 0;
+        int vanillaCount = __instance.mChosenSeeds.Count;
+        SeedChooserPaging.OnScreenOpened(vanillaCount);
 
         // Add an entry for every numeric value from the current end of mChosenSeeds up through the
         // highest registered custom SeedType, not just the actually-registered ones. Decompiling
@@ -95,6 +97,10 @@ public partial class SeedChooserScreen_CustomSeedsPatch
         }
 
         MelonLoader.MelonLogger.Msg($"[SeedChooserScreen] Added {customPlantCount} custom seed(s) to chooser (registry reports {CustomContentRegistry.GetAllCustomPlantTypes().Count} registered, highest value {CustomContentRegistry.GetHighestCustomPlantTypeValue()}).");
+
+        // Computes which page each entry belongs on and repositions (mX/mY) whatever landed past
+        // page 0 - never mSeedState, see SeedChooserPaging's type comment for why.
+        SeedChooserPaging.ApplyPaging(__instance);
 
         // UpdateSeedChooserScreen already ran once before mChosenSeeds had these entries in it
         // (it only fires once per screen open, not every frame), so force it to try again now
