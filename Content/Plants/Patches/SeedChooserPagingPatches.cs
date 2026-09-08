@@ -55,6 +55,12 @@ public static class SeedChooserPaging
     private static int currentPage = 0;
     private static int lastPageCount = 1;
 
+    // Set by SeedChooserScreen_InjectPagingButtons_Patch right after it confirms a non-empty,
+    // sane Grid (its own search already prefers the smallest candidate when more than one
+    // P_SeedChooser exists - see its comment). Reusing this one verified reference instead of
+    // re-searching the scene fresh every call avoids redoing that same search repeatedly.
+    public static Transform CachedGrid { get; set; }
+
     // How many of mChosenSeeds' leading entries are native's own real plants (captured right
     // before SeedChooserScreen_CustomSeedsPatch's injection loop appends anything) - used only to
     // tell a real vanilla entry apart from the unrelated reserved/minigame-ID range (SeedTypes
@@ -86,9 +92,17 @@ public static class SeedChooserPaging
 
     // The single source of truth ForceRefresh prunes the reactive model against - true means
     // "keep this entry in the model." A SeedType not in pageIndexByType at all (the reserved
-    // minigame-ID gap range) is never visible on any page.
+    // minigame-ID gap range) is never visible on any page - except Imitater, which paging
+    // excludes from pageIndexByType entirely (see ApplyPaging) but must still never be pruned,
+    // since it isn't a page-consuming grid entry at all and needs to render exactly as native
+    // always has, on every page.
     public static bool ShouldBeVisible(SeedType seedType)
     {
+        if (seedType == SeedType.Imitater)
+        {
+            return true;
+        }
+
         return pageIndexByType.TryGetValue(seedType, out int page) && page == currentPage;
     }
 
@@ -106,6 +120,18 @@ public static class SeedChooserPaging
 
         foreach (var cs in screen.mChosenSeeds)
         {
+            // Imitater sits inside the "vanilla" SeedType range (48, right after the 48 real
+            // plants - confirmed live VanillaCount is 49, counting it) but isn't a real grid
+            // entry at all: it renders in its own dedicated slot outside the Grid hierarchy
+            // entirely, using this same ChosenSeed's mX/mY for something other than a page
+            // position. Treating it as page 49's overflow moved its coordinates onto Peashooter's
+            // real grid slot (confirmed live: the Imitater slot started showing Peashooter's
+            // tooltip/icon) - excluded here so paging never touches it at all.
+            if (cs.mSeedType == SeedType.Imitater)
+            {
+                continue;
+            }
+
             bool isRealVanilla = (int)cs.mSeedType < VanillaCount;
             bool isRealCustom = CustomContentRegistry.IsValidCustomPlantType(cs.mSeedType);
             if (!isRealVanilla && !isRealCustom)
@@ -164,6 +190,7 @@ public static class SeedChooserPaging
         currentPage++;
         ApplyPaging(screen);
         SeedChooserDataModel_CustomPlantEntriesPatch.ApplyPageVisibility(dataModel);
+        RewireVisibleGridNavigation();
     }
 
     public static void GoToPreviousPage(SeedChooserDataModel dataModel, SeedChooserScreen screen)
@@ -178,6 +205,116 @@ public static class SeedChooserPaging
         currentPage--;
         ApplyPaging(screen);
         SeedChooserDataModel_CustomPlantEntriesPatch.ApplyPageVisibility(dataModel);
+        RewireVisibleGridNavigation();
+    }
+
+    // Confirmed live (via an on-demand nav-dump diagnostic) the actual root cause of a grid
+    // keyboard/controller navigation freeze: native's own GridNavigationContainer reconfigures a
+    // resized grid's up/down reasonably, but its left/right sibling-to-sibling chain doesn't get
+    // rebuilt - cells kept pointing at the SAME 48-cell-page siblings even after we pruned down to
+    // an 8-cell custom page, so the moment navigation tried to follow one of those now-destroyed
+    // references, Unity's EventSystem selection collapsed to null - and once null, there's no
+    // "from" point left for ANY further keyboard/controller input to navigate from, which is why
+    // this reads as a total, permanent-for-the-session freeze rather than an occasional misstep.
+    //
+    // Since it's OUR OWN paging that resizes the grid, we own fixing the chain afterward rather
+    // than trusting native to notice - re-linking every CURRENTLY VISIBLE cell to its real
+    // same-page row/column neighbors. Deliberately only overwrites a direction when a same-page
+    // neighbor actually exists in that direction (see SetHorizontalNav's same pattern above) -
+    // boundary cells (first/last row, first/last column) keep whatever native already wired for
+    // them (e.g. the bottom row's "down" into the Let's Rock button), since those were never the
+    // stale/broken links in the first place.
+    public static void RewireVisibleGridNavigation()
+    {
+        // Prefer the cached reference (see CachedGrid's own comment) - only fall back to a fresh
+        // search if nothing's been cached yet (e.g. this runs before
+        // SeedChooserScreen_InjectPagingButtons_Patch ever
+        // successfully found one this session).
+        Transform grid = CachedGrid;
+        if (grid == null)
+        {
+            // Same "prefer the smallest sane non-empty Grid across every P_SeedChooser
+            // candidate" logic as SeedChooserScreen_InjectPagingButtons_Patch - see its own
+            // comment for why taking the first match isn't safe (stale, orphan-accumulated
+            // copies from earlier restarts can coexist in the scene at once).
+            var activeScene = SceneManager.GetActiveScene();
+            foreach (var root in activeScene.GetRootGameObjects())
+            {
+                foreach (var candidateRoot in UnityUtil.FindDeepChildrenByName(root.transform, "P_SeedChooser"))
+                {
+                    var candidateGrid = candidateRoot.transform.FindChild("Canvas/Layout/Center/Panel/SeedChooser/Grid");
+                    if (candidateGrid == null || candidateGrid.childCount == 0)
+                    {
+                        continue;
+                    }
+
+                    if (grid == null || candidateGrid.childCount < grid.childCount)
+                    {
+                        grid = candidateGrid;
+                    }
+                }
+            }
+        }
+
+        if (grid == null || grid.childCount == 0)
+        {
+            // Not ready yet (or genuinely not found) - safe to skip, a later page-turn or the
+            // next UpdateEntries() call will call this again.
+            return;
+        }
+
+        // Filtering to active cells only, rather than trusting raw sibling index, is cheap
+        // insurance against anything else ever transiently inflating grid.childCount beyond
+        // what's really on screen (confirmed live this could happen: each individual
+        // Add/RemoveModel call in ApplyPageVisibility used to fire its own "Modified" event,
+        // and the view's reaction to it was a full re-sync rather than a surgical diff - 48
+        // separate RemoveModel calls in one page turn meant 48 separate re-syncs, ballooning to
+        // over a thousand children in a single page turn. That's fixed at the source now
+        // (ApplyPageVisibility/PruneToCurrentPage batch all their changes behind
+        // DisableModifiedTrigger and emit exactly one Modified at the end), but this filter costs
+        // nothing and remains a reasonable safety net.
+        var activeSelectables = new List<Selectable>();
+        for (int i = 0; i < grid.childCount; i++)
+        {
+            var child = grid.GetChild(i);
+            if (!child.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            var selectable = child.GetComponentInChildren<Selectable>();
+            if (selectable != null)
+            {
+                activeSelectables.Add(selectable);
+            }
+        }
+
+        var selectables = activeSelectables.ToArray();
+        int count = selectables.Length;
+
+        for (int i = 0; i < count; i++)
+        {
+            var selectable = selectables[i];
+            if (selectable == null)
+            {
+                continue;
+            }
+
+            int column = i % GridColumns;
+
+            Selectable up = i >= GridColumns ? selectables[i - GridColumns] : null;
+            Selectable down = (i + GridColumns) < count ? selectables[i + GridColumns] : null;
+            Selectable left = column > 0 ? selectables[i - 1] : null;
+            Selectable right = (column < GridColumns - 1 && i + 1 < count) ? selectables[i + 1] : null;
+
+            var nav = selectable.navigation;
+            nav.mode = Navigation.Mode.Explicit;
+            if (up != null) nav.selectOnUp = up;
+            if (down != null) nav.selectOnDown = down;
+            if (left != null) nav.selectOnLeft = left;
+            if (right != null) nav.selectOnRight = right;
+            selectable.navigation = nav;
+        }
     }
 }
 
@@ -297,14 +434,18 @@ public class SeedChooserScreen_InjectPagingButtons_Patch
 
         if (arrowsSource == null)
         {
-            // TEMP DIAGNOSTIC - none of the guessed names matched. Dump the real hierarchy under
-            // the found AlmanacArchive so the actual child name can be confirmed instead of
-            // guessed again. Remove once found.
+            // None of the guessed names matched - dump the real hierarchy under the found
+            // AlmanacArchive so the actual child name can be read from the log instead of
+            // guessed again (e.g. if a future game update renames this asset).
             var childNames = new List<string>();
             void DumpChildren(Transform t, int depth)
             {
-                foreach (Transform child in t)
+                // Index-based, not foreach - foreach (Transform child in t) throws
+                // InvalidCastException live under IL2Cpp interop (confirmed the hard way
+                // elsewhere in this file - see the Buttons-bar diagnostic below).
+                for (int i = 0; i < t.childCount; i++)
                 {
+                    var child = t.GetChild(i);
                     childNames.Add(new string(' ', depth * 2) + child.name);
                     DumpChildren(child, depth + 1);
                 }
@@ -317,31 +458,39 @@ public class SeedChooserScreen_InjectPagingButtons_Patch
 
         // Locate the seed chooser's own panel Transform to parent the cloned buttons under -
         // same scene-root search path the earlier scrollbar attempt used to find "Grid".
+        //
+        // Multiple "P_SeedChooser" instances can in principle coexist in the scene (e.g. a stale
+        // copy left behind by an earlier restart never torn down) - considering every candidate
+        // across every root and preferring the smallest sane non-empty Grid, rather than whichever
+        // happens to be first by scene root enumeration order, means a stale/oversized leftover
+        // never gets picked over the real, currently-visible one.
         Transform seedChooserPanel = null;
+        Transform seedChooserRoot = null;
+        Transform bestGrid = null;
         var activeScene = SceneManager.GetActiveScene();
         foreach (var root in activeScene.GetRootGameObjects())
         {
-            var targetChildren = UnityUtil.FindDeepChildrenByName(root.transform, "P_SeedChooser");
-            if (targetChildren.Count == 0)
+            foreach (var candidateRoot in UnityUtil.FindDeepChildrenByName(root.transform, "P_SeedChooser"))
             {
-                continue;
-            }
+                var candidatePanel = candidateRoot.transform.FindChild("Canvas/Layout/Center/Panel/SeedChooser");
+                if (candidatePanel == null)
+                {
+                    continue;
+                }
 
-            var candidatePanel = targetChildren[0].transform.FindChild("Canvas/Layout/Center/Panel/SeedChooser");
-            if (candidatePanel == null)
-            {
-                continue;
-            }
+                var grid = candidatePanel.FindChild("Grid");
+                if (grid == null || grid.childCount == 0)
+                {
+                    continue;
+                }
 
-            var grid = candidatePanel.FindChild("Grid");
-            if (grid == null || grid.childCount == 0)
-            {
-                // UI not built yet on this pass - try again next frame (bounded by MaxAttempts).
-                return;
+                if (bestGrid == null || grid.childCount < bestGrid.childCount)
+                {
+                    bestGrid = grid;
+                    seedChooserRoot = candidateRoot.transform;
+                    seedChooserPanel = candidatePanel;
+                }
             }
-
-            seedChooserPanel = candidatePanel;
-            break;
         }
 
         if (seedChooserPanel == null)
@@ -350,9 +499,24 @@ public class SeedChooserScreen_InjectPagingButtons_Patch
             return;
         }
 
+        SeedChooserPaging.CachedGrid = bestGrid;
+
         patchMarker.IsPatched = true;
 
-        var arrowsClone = UnityEngine.Object.Instantiate(arrowsSource, seedChooserPanel);
+        // Parented under the ViewStore/ViewAlmanac row, not seedChooserPanel - seedChooserPanel's
+        // own bounds/anchoring never let this land anywhere but stuck near/overlapping the
+        // Imitator slot no matter what offset was tried, since the panel doesn't actually extend
+        // out to the open margin between it and Shop the way a naive "just anchor further right"
+        // assumption expected. This row does reach that open space; the actual bugs were the
+        // scale (0.35x read as "too small") and the button separation not producing a real visible
+        // gap in practice - fixing both below with a diagnostic to confirm the real result this
+        // time instead of guessing blind again.
+        // NotCoop is a mode-conditional row (a co-op session uses a different, "Coop" one
+        // instead) - fall back to the panel itself if it's not the active one this session.
+        var notCoopRow = seedChooserRoot.FindChild("Canvas/Layout/Center/Buttons/NotCoop");
+        var buttonsRow = (notCoopRow != null && notCoopRow.gameObject.activeInHierarchy) ? notCoopRow : seedChooserPanel;
+
+        var arrowsClone = UnityEngine.Object.Instantiate(arrowsSource, buttonsRow);
         arrowsClone.name = "CoreLib_SeedChooserPagingArrows";
         arrowsClone.SetActive(true);
 
@@ -398,15 +562,107 @@ public class SeedChooserScreen_InjectPagingButtons_Patch
             }));
         }
 
-        // Anchored bottom-right of the seed chooser panel, clear of the grid itself - a rough
-        // starting position, will very likely need live tuning against the real layout.
+        // Force explicit separation between the two cloned buttons - confirmed live via a layout
+        // dump each one is a real 330x300 rect (they clone from AlmanacArchive's own "arrows",
+        // sized for that screen). This offset is in the group's own unscaled local space, so it
+        // scales down together with the buttons themselves below - at 0.5 scale, +-220 renders as
+        // +-110 with each button's own rendered half-width at 82.5, leaving a real ~55-unit visible
+        // gap between them instead of the near-zero gap +-180/0.35 apparently produced live.
+        if (buttons.Length >= 2)
+        {
+            var previousRect = buttons[0].GetComponent<RectTransform>();
+            var nextRect = buttons[1].GetComponent<RectTransform>();
+            if (previousRect != null)
+            {
+                previousRect.anchoredPosition = new Vector2(-220, 0);
+            }
+
+            if (nextRect != null)
+            {
+                nextRect.anchoredPosition = new Vector2(220, 0);
+            }
+        }
+
+        // Looked up here (rather than only later, for nav-wiring) so positioning below can be
+        // computed relative to ViewStore's own REAL, currently-live position instead of a
+        // hardcoded guess - confirmed live that a fixed world-space offset that measured out
+        // correctly in one game mode rendered somewhere else entirely in another (Onslaught),
+        // so anything mode-specific about scale/layout there is sidestepped by reading ViewStore's
+        // own anchoredPosition fresh every time instead of assuming it never moves.
+        var imitatorSlot = seedChooserPanel.FindChild("Imitator/P_GamePlay_SeedChooser_Item (1)/Offset/SeedBackground")?.GetComponent<Selectable>();
+        var viewStore = seedChooserRoot.FindChild("Canvas/Layout/Center/Buttons/NotCoop/ViewStore")?.GetComponent<Selectable>();
+        var viewStoreRect = viewStore?.GetComponent<RectTransform>();
+
+        // Same row as ViewStore/ViewAlmanac (or seedChooserPanel as a fallback - see buttonsRow
+        // above), using their own anchor convention (anchorMin/Max=(0,1), pivot=(0,0)). 0.5 scale
+        // (was 0.35, read as "too small") brings each 330x300 button down to a more visible
+        // ~165x150; the pair (each button's own half-width 82.5, plus 220 separation, times the
+        // 0.5 scale) extends 192.5 either side of this group's own local origin.
         var rect = arrowsClone.GetComponent<RectTransform>();
         if (rect != null)
         {
-            rect.anchorMin = new Vector2(1, 0);
-            rect.anchorMax = new Vector2(1, 0);
-            rect.pivot = new Vector2(1, 0);
-            rect.anchoredPosition = new Vector2(-20, 20);
+            rect.localScale = new Vector3(0.5f, 0.5f, 1f);
+
+            if (buttonsRow == notCoopRow && viewStoreRect != null)
+            {
+                const float pairHalfWidth = 192.5f;
+                const float gapBeforeViewStore = 40f;
+                float groupX = viewStoreRect.anchoredPosition.x - gapBeforeViewStore - pairHalfWidth;
+
+                rect.anchorMin = new Vector2(0, 1);
+                rect.anchorMax = new Vector2(0, 1);
+                rect.pivot = new Vector2(0, 0);
+                rect.anchoredPosition = new Vector2(groupX, viewStoreRect.anchoredPosition.y);
+            }
+            else
+            {
+                // Fallback for screens with no NotCoop row (e.g. a minigame with no Shop/Almanac
+                // access) - anchored using the Imitator slot's own convention (anchorMin/Max=(1,0),
+                // pivot=(0,0)), well clear of its x=[-18,237] local span.
+                rect.anchorMin = new Vector2(1, 0);
+                rect.anchorMax = new Vector2(1, 0);
+                rect.pivot = new Vector2(0, 0);
+                rect.anchoredPosition = new Vector2(550, 120);
+            }
+        }
+
+        // Our buttons clone from AlmanacArchive with mode=None (confirmed live via a one-time
+        // hierarchy dump - not reachable by gamepad/keyboard, mouse-only). This screen's whole
+        // menu uses plain Unity Explicit Selectable.navigation for its left/right chain (a custom
+        // layer on top just decides which chain is "current," per Il2CppReloaded.Input's
+        // *NavigationContainer types) - confirmed live the real chain runs
+        // Grid -> Imitator's seed slot -> ViewStore -> ViewAlmanac -> ViewLawnButton, all via
+        // left/right only (no vertical links at this row). Splices our two buttons into that
+        // chain between the Imitator slot and ViewStore, matching where the user asked for them.
+        if (buttons.Length >= 2)
+        {
+            if (imitatorSlot != null && viewStore != null)
+            {
+                var previousButton = buttons[0];
+                var nextButton = buttons[1];
+
+                SetHorizontalNav(imitatorSlot, right: previousButton);
+                SetHorizontalNav(previousButton, left: imitatorSlot, right: nextButton);
+                SetHorizontalNav(nextButton, left: previousButton, right: viewStore);
+                SetHorizontalNav(viewStore, left: nextButton);
+            }
+            else
+            {
+                MelonLoader.MelonLogger.Warning("[CoreLib] Could not find the Imitator seed slot and/or ViewStore button to splice seed chooser paging buttons into the gamepad/keyboard navigation chain - paging buttons will stay mouse-only this session.");
+            }
         }
     }
+
+    // Only overwrites the directions passed - null leaves whatever that Selectable already had
+    // (e.g. the Imitator slot's own left=Grid, or ViewStore's own right=ViewAlmanac, both stay
+    // untouched here).
+    static void SetHorizontalNav(Selectable selectable, Selectable left = null, Selectable right = null)
+    {
+        var nav = selectable.navigation;
+        nav.mode = Navigation.Mode.Explicit;
+        if (left != null) nav.selectOnLeft = left;
+        if (right != null) nav.selectOnRight = right;
+        selectable.navigation = nav;
+    }
 }
+
