@@ -111,6 +111,10 @@
 			<HintPath>C:\SteamLibrary\steamapps\common\PVZ Replanted\MelonLoader\Il2CppAssemblies\UnityEngine.Physics2DModule.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
+		<Reference Include="UnityEngine.UIModule">
+			<HintPath>C:\SteamLibrary\steamapps\common\PVZ Replanted\MelonLoader\Il2CppAssemblies\UnityEngine.UIModule.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
 		<Reference Include="UnityEngine.UI">
 			<HintPath>C:\SteamLibrary\steamapps\common\PVZ Replanted\MelonLoader\Il2CppAssemblies\UnityEngine.UI.dll</HintPath>
 			<Private>False</Private>

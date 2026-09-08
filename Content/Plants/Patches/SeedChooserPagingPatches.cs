@@ -503,20 +503,16 @@ public class SeedChooserScreen_InjectPagingButtons_Patch
 
         patchMarker.IsPatched = true;
 
-        // Parented under the ViewStore/ViewAlmanac row, not seedChooserPanel - seedChooserPanel's
-        // own bounds/anchoring never let this land anywhere but stuck near/overlapping the
-        // Imitator slot no matter what offset was tried, since the panel doesn't actually extend
-        // out to the open margin between it and Shop the way a naive "just anchor further right"
-        // assumption expected. This row does reach that open space; the actual bugs were the
-        // scale (0.35x read as "too small") and the button separation not producing a real visible
-        // gap in practice - fixing both below with a diagnostic to confirm the real result this
-        // time instead of guessing blind again.
-        // NotCoop is a mode-conditional row (a co-op session uses a different, "Coop" one
-        // instead) - fall back to the panel itself if it's not the active one this session.
-        var notCoopRow = seedChooserRoot.FindChild("Canvas/Layout/Center/Buttons/NotCoop");
-        var buttonsRow = (notCoopRow != null && notCoopRow.gameObject.activeInHierarchy) ? notCoopRow : seedChooserPanel;
-
-        var arrowsClone = UnityEngine.Object.Instantiate(arrowsSource, buttonsRow);
+        // Parented under seedChooserPanel itself - reaching across to the ViewStore/ViewAlmanac
+        // row (a different, sibling UI tree entirely) was abandoned after live screen-space
+        // measurements (RectTransformUtility.WorldToScreenPoint) confirmed correct relative
+        // positioning on paper while the actual on-screen result stayed wrong regardless - strong
+        // evidence something about that cross-hierarchy comparison doesn't hold here (possibly yet
+        // another IL2Cpp interop gap, matching several other APIs this session that silently
+        // returned plausible-looking but wrong values). Anchoring purely within seedChooserPanel,
+        // the same parent Imitator itself lives in and renders correctly, avoids that class of
+        // problem entirely - no cross-hierarchy reads involved at all.
+        var arrowsClone = UnityEngine.Object.Instantiate(arrowsSource, seedChooserPanel);
         arrowsClone.name = "CoreLib_SeedChooserPagingArrows";
         arrowsClone.SetActive(true);
 
@@ -565,66 +561,63 @@ public class SeedChooserScreen_InjectPagingButtons_Patch
         // Force explicit separation between the two cloned buttons - confirmed live via a layout
         // dump each one is a real 330x300 rect (they clone from AlmanacArchive's own "arrows",
         // sized for that screen). This offset is in the group's own unscaled local space, so it
-        // scales down together with the buttons themselves below - at 0.5 scale, +-220 renders as
-        // +-110 with each button's own rendered half-width at 82.5, leaving a real ~55-unit visible
-        // gap between them instead of the near-zero gap +-180/0.35 apparently produced live.
+        // scales down together with the buttons themselves below.
         if (buttons.Length >= 2)
         {
             var previousRect = buttons[0].GetComponent<RectTransform>();
             var nextRect = buttons[1].GetComponent<RectTransform>();
             if (previousRect != null)
             {
-                previousRect.anchoredPosition = new Vector2(-220, 0);
+                previousRect.anchoredPosition = new Vector2(-320, 0);
             }
 
             if (nextRect != null)
             {
-                nextRect.anchoredPosition = new Vector2(220, 0);
+                nextRect.anchoredPosition = new Vector2(320, 0);
             }
         }
 
-        // Looked up here (rather than only later, for nav-wiring) so positioning below can be
-        // computed relative to ViewStore's own REAL, currently-live position instead of a
-        // hardcoded guess - confirmed live that a fixed world-space offset that measured out
-        // correctly in one game mode rendered somewhere else entirely in another (Onslaught),
-        // so anything mode-specific about scale/layout there is sidestepped by reading ViewStore's
-        // own anchoredPosition fresh every time instead of assuming it never moves.
-        var imitatorSlot = seedChooserPanel.FindChild("Imitator/P_GamePlay_SeedChooser_Item (1)/Offset/SeedBackground")?.GetComponent<Selectable>();
-        var viewStore = seedChooserRoot.FindChild("Canvas/Layout/Center/Buttons/NotCoop/ViewStore")?.GetComponent<Selectable>();
-        var viewStoreRect = viewStore?.GetComponent<RectTransform>();
+        // The top-level Imitator container itself (not the deeply-nested SeedBackground selectable
+        // used below for nav-wiring) - its own RectTransform gives a direct anchoredPosition/
+        // sizeDelta reading in the exact same coordinate system our own buttons are about to be
+        // parented into (seedChooserPanel), with no cross-hierarchy conversion involved at all.
+        var imitatorTransform = seedChooserPanel.FindChild("Imitator");
+        var imitatorRect = imitatorTransform?.GetComponent<RectTransform>();
+        var imitatorSlot = imitatorTransform?.FindChild("P_GamePlay_SeedChooser_Item (1)/Offset/SeedBackground")?.GetComponent<Selectable>();
 
-        // Same row as ViewStore/ViewAlmanac (or seedChooserPanel as a fallback - see buttonsRow
-        // above), using their own anchor convention (anchorMin/Max=(0,1), pivot=(0,0)). 0.5 scale
-        // (was 0.35, read as "too small") brings each 330x300 button down to a more visible
-        // ~165x150; the pair (each button's own half-width 82.5, plus 220 separation, times the
-        // 0.5 scale) extends 192.5 either side of this group's own local origin.
+        // Anchored using Imitator's own convention (anchorMin/Max=(1,0), pivot=(0,0) - Imitator's
+        // own anchoredPosition.x is "how far right of the panel's right edge its own left edge
+        // sits"). Positioned just clear of Imitator's own right edge (its anchoredPosition.x +
+        // sizeDelta.x), at the same height (anchoredPosition.y) - both read live rather than
+        // hardcoded, so this holds even if Imitator's own layout ever changes. 0.6 scale brings
+        // each 330x300 button down to a more visible ~200x180; the pair (each button's own
+        // half-width 165, plus 320 separation, times the 0.6 scale) extends 291 either side of
+        // this group's own local origin, so its own left edge needs a further 291 clearance
+        // beyond Imitator's edge on top of a small gap.
         var rect = arrowsClone.GetComponent<RectTransform>();
         if (rect != null)
         {
-            rect.localScale = new Vector3(0.5f, 0.5f, 1f);
+            rect.localScale = new Vector3(0.6f, 0.6f, 1f);
+            rect.anchorMin = new Vector2(1, 0);
+            rect.anchorMax = new Vector2(1, 0);
+            rect.pivot = new Vector2(0, 0);
 
-            if (buttonsRow == notCoopRow && viewStoreRect != null)
+            if (imitatorRect != null)
             {
-                const float pairHalfWidth = 192.5f;
-                const float gapBeforeViewStore = 40f;
-                float groupX = viewStoreRect.anchoredPosition.x - gapBeforeViewStore - pairHalfWidth;
-
-                rect.anchorMin = new Vector2(0, 1);
-                rect.anchorMax = new Vector2(0, 1);
-                rect.pivot = new Vector2(0, 0);
-                rect.anchoredPosition = new Vector2(groupX, viewStoreRect.anchoredPosition.y);
+                const float pairHalfWidth = 291f;
+                const float gapAfterImitator = 40f;
+                float groupX = imitatorRect.anchoredPosition.x + imitatorRect.sizeDelta.x + gapAfterImitator + pairHalfWidth;
+                rect.anchoredPosition = new Vector2(groupX, imitatorRect.anchoredPosition.y);
             }
             else
             {
-                // Fallback for screens with no NotCoop row (e.g. a minigame with no Shop/Almanac
-                // access) - anchored using the Imitator slot's own convention (anchorMin/Max=(1,0),
-                // pivot=(0,0)), well clear of its x=[-18,237] local span.
-                rect.anchorMin = new Vector2(1, 0);
-                rect.anchorMax = new Vector2(1, 0);
-                rect.pivot = new Vector2(0, 0);
+                // Imitator not found for some reason - fall back to a fixed offset comfortably
+                // past its known real span (x=[-18,237]).
                 rect.anchoredPosition = new Vector2(550, 120);
             }
         }
+
+        MelonLoader.MelonLogger.Msg($"[CoreLib] Button position: imitator anchoredPos={imitatorRect?.anchoredPosition}, sizeDelta={imitatorRect?.sizeDelta}, our final anchoredPos={rect?.anchoredPosition}.");
 
         // Our buttons clone from AlmanacArchive with mode=None (confirmed live via a one-time
         // hierarchy dump - not reachable by gamepad/keyboard, mouse-only). This screen's whole
@@ -634,6 +627,8 @@ public class SeedChooserScreen_InjectPagingButtons_Patch
         // Grid -> Imitator's seed slot -> ViewStore -> ViewAlmanac -> ViewLawnButton, all via
         // left/right only (no vertical links at this row). Splices our two buttons into that
         // chain between the Imitator slot and ViewStore, matching where the user asked for them.
+        var viewStore = seedChooserRoot.FindChild("Canvas/Layout/Center/Buttons/NotCoop/ViewStore")?.GetComponent<Selectable>();
+
         if (buttons.Length >= 2)
         {
             if (imitatorSlot != null && viewStore != null)
