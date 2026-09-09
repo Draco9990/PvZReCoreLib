@@ -7,7 +7,7 @@ using PvZReCoreLib.Content.Plants.Patches;
 using PvZReCoreLib.Util;
 using UnityEngine.SceneManagement;
 
-[assembly: MelonInfo(typeof(CoreLibMod), "CoreLib", "1.0", "Draco9990 & Kedzie")]
+[assembly: MelonInfo(typeof(CoreLibMod), "CoreLib", "1.1", "Draco9990 & Kedzie")]
 [assembly: MelonGame("PopCap Games", "PvZ Replanted")]
 
 namespace PvZReCoreLib;

@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using System.Collections.Generic;
+using HarmonyLib;
 using Il2CppInterop.Runtime.Injection;
 using Il2CppInterop.Runtime.InteropTypes.Fields;
 using Il2CppReloaded;
@@ -174,7 +175,27 @@ public class CustomPlantBehaviorController : CustomBehaviorController
     public void PlayAudio(AudioClip sfx)
     {
         var audioSrv = AppCore.GetService<IAudioService>().Cast<AudioService>();
-        audioSrv.m_audioSources.GetAudioSource(Constants.Sound.SOUND_PLANT).m_audioSource.PlayOneShot(sfx);
+        var sfxVolume = AppCore.GetService<ISettingsService>().SoundEffectVolume;
+        audioSrv.m_audioSources.GetAudioSource(Constants.Sound.SOUND_PLANT).m_audioSource.PlayOneShot(sfx, sfxVolume);
+    }
+
+    // Populated by plant defs, e.g. RegisterSoundPool("punch", jab1, jab2, ...).
+    // Looked up by name from a baked Animation Event's string parameter
+    // (see AnimationScripts.PlaySoundEvent) so one semantic event can pick a
+    // random variant each time instead of always playing the same clip.
+    private readonly Dictionary<string, List<AudioClip>> mSoundPools = new Dictionary<string, List<AudioClip>>();
+
+    public void RegisterSoundPool(string eventName, params AudioClip[] clips)
+    {
+        mSoundPools[eventName] = new List<AudioClip>(clips);
+    }
+
+    public void OnAnimationSoundEvent(string eventName)
+    {
+        if (mSoundPools.TryGetValue(eventName, out var pool) && pool.Count > 0)
+        {
+            PlayAudio(pool[UnityEngine.Random.Range(0, pool.Count)]);
+        }
     }
 
     // Lets SkinRegistry's PlayAnimation postfix tell "we asked for this" apart

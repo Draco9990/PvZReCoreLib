@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using System.Collections.Generic;
+using HarmonyLib;
 using Il2CppInterop.Runtime.Injection;
 using Il2CppInterop.Runtime.InteropTypes.Fields;
 using Il2CppReloaded;
@@ -155,7 +156,31 @@ public class CustomProjectileBehaviorController : CustomBehaviorController
         var audioSrv = AppCore.GetService<IAudioService>().Cast<AudioService>();
         if (customDef != null && customDef.m_hitSfx != null)
         {
-            audioSrv.m_audioSources.GetAudioSource(Constants.Sound.SOUND_PLANT).m_audioSource.PlayOneShot(customDef.m_hitSfx);
+            var sfxVolume = AppCore.GetService<ISettingsService>().SoundEffectVolume;
+            audioSrv.m_audioSources.GetAudioSource(Constants.Sound.SOUND_PLANT).m_audioSource.PlayOneShot(customDef.m_hitSfx, sfxVolume);
+        }
+    }
+
+    public void PlayAudio(AudioClip sfx)
+    {
+        var audioSrv = AppCore.GetService<IAudioService>().Cast<AudioService>();
+        var sfxVolume = AppCore.GetService<ISettingsService>().SoundEffectVolume;
+        audioSrv.m_audioSources.GetAudioSource(Constants.Sound.SOUND_PLANT).m_audioSource.PlayOneShot(sfx, sfxVolume);
+    }
+
+    // Same pool-by-name pattern as CustomPlantBehaviorController - see there for why.
+    private readonly Dictionary<string, List<AudioClip>> mSoundPools = new Dictionary<string, List<AudioClip>>();
+
+    public void RegisterSoundPool(string eventName, params AudioClip[] clips)
+    {
+        mSoundPools[eventName] = new List<AudioClip>(clips);
+    }
+
+    public void OnAnimationSoundEvent(string eventName)
+    {
+        if (mSoundPools.TryGetValue(eventName, out var pool) && pool.Count > 0)
+        {
+            PlayAudio(pool[UnityEngine.Random.Range(0, pool.Count)]);
         }
     }
 
